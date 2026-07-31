@@ -31,9 +31,25 @@ const upload = multer({
   limits: { fileSize: 1024 * 1024 * 1024 }, // 1 GB max
 });
 
-// Middleware
+// Middleware & Permissive CORS Configuration
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-user-id');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
+
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'x-user-id'],
+}));
+
 app.use(compression()); // Gzip/Brotli payload compression for ultra-low data usage
-app.use(cors());
 app.use(express.json({ limit: '1gb' }));
 app.use(express.urlencoded({ limit: '1gb', extended: true }));
 
