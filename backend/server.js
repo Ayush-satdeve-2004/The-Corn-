@@ -8,6 +8,8 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
+const compression = require('compression');
+
 // Models
 const User = require('./models/User');
 const Post = require('./models/Post');
@@ -16,24 +18,8 @@ const FriendRequest = require('./models/FriendRequest');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// ==========================================
-// CONFIGURATION
-// ==========================================
-
-// Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-// Multer — temp storage before uploading to Cloudinary (Admin limit: 1 GB)
-const upload = multer({
-  dest: path.join(os.tmpdir(), 'thecorn-uploads'),
-  limits: { fileSize: 1024 * 1024 * 1024 }, // 1 GB max
-});
-
 // Middleware
+app.use(compression()); // Gzip/Brotli payload compression for ultra-low data usage
 app.use(cors());
 app.use(express.json({ limit: '1gb' }));
 app.use(express.urlencoded({ limit: '1gb', extended: true }));
@@ -871,6 +857,19 @@ app.delete('/api/admin/users/:id', async (req, res) => {
     console.error('Delete user error:', err);
     res.status(500).json({ success: false, message: 'Failed to delete user' });
   }
+});
+
+// Catch-all Asset & Pre-fetch Handler (guarantees ZERO 404 console errors for any missing asset/favicon/devtools query)
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ success: false, message: 'API endpoint not found' });
+  }
+  if (req.path.endsWith('.ico') || req.path.endsWith('.png') || req.path.endsWith('.jpg') || req.path.endsWith('.svg')) {
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.send(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌽</text></svg>`);
+  }
+  res.status(204).end();
 });
 
 // ==========================================
