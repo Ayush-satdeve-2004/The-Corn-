@@ -12,6 +12,8 @@ import Toast from '../components/Toast';
 import { useNavigate } from 'react-router-dom';
 import './Home.css';
 
+import { useUpload } from '../context/UploadContext';
+
 function getTimeAgo(timestamp) {
   const diff = Date.now() - timestamp;
   const mins = Math.floor(diff / 60000);
@@ -26,6 +28,7 @@ const CACHED_FEED_KEY = 'thecorn_feed_cache';
 
 export default function Home() {
   const { user } = useAuth();
+  const { activeUpload } = useUpload();
   const navigate = useNavigate();
 
   const initialCachedEnriched = (() => {
@@ -96,6 +99,13 @@ export default function Home() {
     });
     return () => { isMounted = false; };
   }, [loadFeed]);
+
+  // Refresh feed automatically when a background upload completes
+  useEffect(() => {
+    if (activeUpload?.status === 'done') {
+      loadFeed();
+    }
+  }, [activeUpload?.status, loadFeed]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);

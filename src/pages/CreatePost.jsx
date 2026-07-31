@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
 import './CreatePost.css';
 
+import { useUpload } from '../context/UploadContext';
+
 const GRADIENTS = [
   { id: 'gradient1', label: 'Sunset', bg: 'linear-gradient(135deg, #8B5324, #966236)' },
   { id: 'gradient2', label: 'Night', bg: 'linear-gradient(135deg, #36190D, #8B5324)' },
@@ -15,6 +17,7 @@ const GRADIENTS = [
 
 export default function CreatePost() {
   const { user } = useAuth();
+  const { startUpload } = useUpload();
   const navigate = useNavigate();
   const [postType, setPostType] = useState('photo');
   const [mediaPreview, setMediaPreview] = useState(null); // object URL for preview
@@ -22,10 +25,6 @@ export default function CreatePost() {
   const [caption, setCaption] = useState('');
   const [textContent, setTextContent] = useState('');
   const [selectedGradient, setSelectedGradient] = useState(GRADIENTS[0]);
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStats, setUploadStats] = useState({ loadedMb: '0', totalMb: '0' });
-  const [published, setPublished] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
@@ -87,49 +86,22 @@ export default function CreatePost() {
       return;
     }
 
-    setIsPublishing(true);
-    setUploadProgress(5);
-    setUploadStats({ loadedMb: '0', totalMb: mediaFile ? (mediaFile.size / (1024 * 1024)).toFixed(1) : '0' });
+    const postData = {
+      userId: user.id,
+      type: postType,
+      content: postType === 'text' ? textContent : caption,
+      caption: postType === 'text' ? '' : caption,
+      gradient: postType === 'text' ? selectedGradient.id : null,
+    };
 
-    try {
-      let mediaUrl = '';
+    // Clean up preview object URL
+    if (mediaPreview) URL.revokeObjectURL(mediaPreview);
 
-      // Upload media file to server if it's a photo or video
-      if (postType !== 'text' && mediaFile) {
-        const uploadResult = await uploadMedia(mediaFile, (percent, loaded, total) => {
-          setUploadProgress(Math.min(95, percent));
-          setUploadStats({
-            loadedMb: (loaded / (1024 * 1024)).toFixed(1),
-            totalMb: (total / (1024 * 1024)).toFixed(1),
-          });
-        });
-        mediaUrl = uploadResult.url;
-        setUploadProgress(98);
-      }
+    // Immediately close screen & navigate back to Home while upload proceeds in background!
+    navigate('/');
 
-      await createPost({
-        userId: user.id,
-        type: postType,
-        content: postType === 'text' ? textContent : caption,
-        caption: postType === 'text' ? '' : caption,
-        mediaUrl: mediaUrl,
-        gradient: postType === 'text' ? selectedGradient.id : null,
-      });
-
-      setUploadProgress(100);
-      setIsPublishing(false);
-      setPublished(true);
-
-      // Clean up object URL
-      if (mediaPreview) URL.revokeObjectURL(mediaPreview);
-
-      setTimeout(() => navigate('/'), 1800);
-    } catch (err) {
-      setIsPublishing(false);
-      setUploadProgress(0);
-      showToast('Failed to publish post. Please try again.', 'error');
-      console.error('Publish error:', err);
-    }
+    // Start background upload & 720p video compression
+    startUpload(postData, postType === 'text' ? null : mediaFile);
   };
 
   const reset = () => {
