@@ -1,22 +1,22 @@
 # The-Corn-
 
-🌽 **The Corn** — A privacy-focused, high-security social networking web application inspired by Instagram, built with React, Vite, Express, and MongoDB Atlas.
+**The Corn** — A privacy-focused, high-security social networking web application inspired by Instagram, built with React, Vite, Express, and MongoDB Atlas.
 
-## 🌟 Key Features
+## Key Features
 
-- **🔐 Privacy & Anti-Hack Shield**:
+- **Privacy & Anti-Hack Shield**:
   - **Dynamic Watermarking**: User data floating watermarks over photos, videos, and text posts.
   - **Anti-Screenshot & Anti-Screen-Recording**: Intercepts `PrintScreen`, `Cmd+Shift+3/4/5`, `Win+Shift+S`, clears system clipboard, and obscures screen on focus loss.
   - **DevTools Inspection Trap**: Detects browser devtools inspection and triggers defensive countermeasures.
 
-- **📱 Core Social Features**:
+- **Core Social Features**:
   - **Home Feed**: Real-time post feed with 100% full-screen responsive media viewer.
   - **Post Types**: Support for Photos, Videos (Admin: 1 GB limit, Users: 500 MB limit), and Text posts with custom gradient themes.
   - **Social Engagement**: Likes, comments (with comment deletion), post saving, and friend sharing.
   - **Friends & Search**: User search bar, friend requests, and accepted friends list.
   - **User Profiles**: Account settings, password reset with Brevo Email OTP, post history, and liked/saved posts.
 
-- **🛡️ Admin Control Panel (`/admin`)**:
+- **Admin Control Panel (`/admin`)**:
   - **Pending Registration Approvals**: 24-hour approval workflow for new accounts.
   - **Active User Management**: Delete user accounts and associated posts.
   - **Post Moderation**: Manage and delete any user photo, video, or text post.
@@ -25,14 +25,14 @@
   - `preload="metadata"` on videos and `loading="lazy"` on images for low mobile internet consumption.
   - Instant 0ms cached session initialization in AuthContext.
 
-## 🚀 Tech Stack
+## Tech Stack
 
 - **Frontend**: React 18, Vite, CSS3
 - **Backend**: Node.js, Express
 - **Database**: MongoDB Atlas (Mongoose)
 - **Services**: Brevo API (Transactional Email OTP), Cloudinary (Media Streaming)
 
-## 🛠️ Getting Started
+##  Getting Started
 
 ### 1. Install Dependencies
 ```bash

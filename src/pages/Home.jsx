@@ -22,12 +22,22 @@ function getTimeAgo(timestamp) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+const CACHED_FEED_KEY = 'thecorn_feed_cache';
+
 export default function Home() {
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const initialCachedEnriched = (() => {
+    try {
+      const cached = localStorage.getItem(CACHED_FEED_KEY);
+      return cached ? JSON.parse(cached) : [];
+    } catch { return []; }
+  })();
+
   const [posts, setPosts] = useState([]);
-  const [enrichedPosts, setEnrichedPosts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [enrichedPosts, setEnrichedPosts] = useState(initialCachedEnriched);
+  const [isLoading, setIsLoading] = useState(initialCachedEnriched.length === 0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedPostIndex, setSelectedPostIndex] = useState(null);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -64,6 +74,10 @@ export default function Home() {
       );
       setPosts(rawPosts);
       setEnrichedPosts(enriched);
+
+      try {
+        localStorage.setItem(CACHED_FEED_KEY, JSON.stringify(enriched));
+      } catch {}
 
       if (user) {
         const f = await getFriends(user.id);

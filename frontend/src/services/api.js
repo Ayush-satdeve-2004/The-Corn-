@@ -141,16 +141,45 @@ export const getFeed = async () => {
   }
 };
 
-export const uploadMedia = async (file) => {
-  const formData = new FormData();
-  formData.append('media', file);
-  const res = await fetch(`${API_BASE_URL}/upload`, {
-    method: 'POST',
-    body: formData,
-    // Do NOT set Content-Type header — browser sets it with boundary for FormData
+export const uploadMedia = (file, onProgress) => {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const formData = new FormData();
+    formData.append('media', file);
+
+    if (xhr.upload && onProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          onProgress(percent, e.loaded, e.total);
+        }
+      };
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          resolve(data);
+        } catch (err) {
+          reject(new Error('Invalid response format from server'));
+        }
+      } else {
+        try {
+          const errData = JSON.parse(xhr.responseText);
+          reject(new Error(errData.error || errData.message || 'Upload failed'));
+        } catch {
+          reject(new Error(`Upload failed (${xhr.status})`));
+        }
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error during video upload'));
+    xhr.ontimeout = () => reject(new Error('Upload timed out. Please try again.'));
+
+    xhr.open('POST', `${API_BASE_URL}/upload`, true);
+    xhr.send(formData);
   });
-  if (!res.ok) throw new Error('Upload failed');
-  return res.json(); // { url, filename }
 };
 
 export const createPost = async (postData) => {

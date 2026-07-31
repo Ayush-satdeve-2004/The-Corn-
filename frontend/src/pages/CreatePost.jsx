@@ -24,6 +24,7 @@ export default function CreatePost() {
   const [selectedGradient, setSelectedGradient] = useState(GRADIENTS[0]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStats, setUploadStats] = useState({ loadedMb: '0', totalMb: '0' });
   const [published, setPublished] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
   const [isDragging, setIsDragging] = useState(false);
@@ -87,17 +88,23 @@ export default function CreatePost() {
     }
 
     setIsPublishing(true);
-    setUploadProgress(0);
+    setUploadProgress(5);
+    setUploadStats({ loadedMb: '0', totalMb: mediaFile ? (mediaFile.size / (1024 * 1024)).toFixed(1) : '0' });
 
     try {
       let mediaUrl = '';
 
       // Upload media file to server if it's a photo or video
       if (postType !== 'text' && mediaFile) {
-        setUploadProgress(10);
-        const uploadResult = await uploadMedia(mediaFile);
+        const uploadResult = await uploadMedia(mediaFile, (percent, loaded, total) => {
+          setUploadProgress(Math.min(95, percent));
+          setUploadStats({
+            loadedMb: (loaded / (1024 * 1024)).toFixed(1),
+            totalMb: (total / (1024 * 1024)).toFixed(1),
+          });
+        });
         mediaUrl = uploadResult.url;
-        setUploadProgress(80);
+        setUploadProgress(98);
       }
 
       await createPost({
