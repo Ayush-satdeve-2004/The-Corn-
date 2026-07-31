@@ -4,6 +4,18 @@ const API_BASE_URL =
     ? 'http://localhost:5001/api'
     : 'https://the-corn.onrender.com/api');
 
+export function getOptimizedMediaUrl(url) {
+  if (!url) return '';
+  if (url.includes('/uploads/')) {
+    const filename = url.split('/uploads/').pop();
+    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    return isLocal
+      ? `http://localhost:5001/uploads/${filename}`
+      : `https://the-corn.onrender.com/uploads/${filename}`;
+  }
+  return url;
+}
+
 async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = { 'Content-Type': 'application/json', ...options.headers };

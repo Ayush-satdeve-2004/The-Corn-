@@ -43,7 +43,12 @@ const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
-app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(uploadsDir));
 
 // ==========================================
 // MONGODB CONNECTION
@@ -262,7 +267,7 @@ app.get('/api/auth/check-username', async (req, res) => {
 app.get('/api/users/:id', async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.json({ id: req.params.id, fullName: 'User', username: 'user', role: 'USER' });
     }
     const user = await User.findById(req.params.id).select('-password -__v');
     if (user) {
@@ -270,9 +275,9 @@ app.get('/api/users/:id', async (req, res) => {
       obj.id = uid(user);
       return res.json(obj);
     }
-    res.status(404).json({ message: 'User not found' });
+    return res.json({ id: req.params.id, fullName: 'User', username: 'user', role: 'USER' });
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    res.json({ id: req.params.id, fullName: 'User', username: 'user', role: 'USER' });
   }
 });
 

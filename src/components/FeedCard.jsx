@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Watermark from './Watermark';
 import { useAuth } from '../context/AuthContext';
+import { getOptimizedMediaUrl } from '../services/api';
 import './FeedCard.css';
 
 const TEXT_GRADIENTS = {
@@ -150,7 +151,7 @@ export default function FeedCard({ post, currentUserId, onLike, onComment, onSav
 
         {post.type === 'photo' && post.mediaUrl && (
           <img
-            src={post.mediaUrl}
+            src={getOptimizedMediaUrl(post.mediaUrl)}
             alt="Post"
             className="feed-media-img"
             loading="lazy"
@@ -164,7 +165,7 @@ export default function FeedCard({ post, currentUserId, onLike, onComment, onSav
           <>
             <video
               ref={videoRef}
-              src={post.mediaUrl}
+              src={getOptimizedMediaUrl(post.mediaUrl)}
               preload="metadata"
               controls
               controlsList="nodownload noplaybackrate nofullscreen"

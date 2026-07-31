@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Watermark from './Watermark';
 import CommentsDrawer from './CommentsDrawer';
-import { commentOnPost, likePost, savePost } from '../services/api';
+import { commentOnPost, likePost, savePost, getOptimizedMediaUrl } from '../services/api';
 import { hidePrivacyShield } from '../services/antiHack';
 import './FullscreenViewer.css';
 
@@ -133,13 +133,13 @@ export default function FullscreenViewer({
           )}
 
           {post.type === 'photo' && (
-            <img src={post.mediaUrl} alt="Post" className="fs-media-img" draggable="false" />
+            <img src={getOptimizedMediaUrl(post.mediaUrl)} alt="Post" className="fs-media-img" draggable="false" />
           )}
           {post.type === 'video' && (
             <>
               <video
                 ref={fsVideoRef}
-                src={post.mediaUrl}
+                src={getOptimizedMediaUrl(post.mediaUrl)}
                 controls
                 autoPlay
                 controlsList="nodownload noplaybackrate nofullscreen"
