@@ -1,17 +1,10 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:5001/api'
-    : 'https://the-corn.onrender.com/api');
+const API_BASE_URL = 'https://the-corn.onrender.com/api';
 
 export function getOptimizedMediaUrl(url) {
   if (!url) return '';
   if (url.includes('/uploads/')) {
     const filename = url.split('/uploads/').pop();
-    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    return isLocal
-      ? `http://localhost:5001/uploads/${filename}`
-      : `https://the-corn.onrender.com/uploads/${filename}`;
+    return `https://the-corn.onrender.com/uploads/${filename}`;
   }
   return url;
 }
