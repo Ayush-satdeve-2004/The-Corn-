@@ -64,8 +64,16 @@ app.get('/api', (req, res) => {
   res.json({ status: 'online', message: 'The Corn API Service' });
 });
 
-// Favicon handler (eliminates browser console 404 favicon error)
-app.get('/favicon.ico', (req, res) => res.status(204).end());
+// Favicon & Browser Meta Handlers (eliminates browser console 404 errors)
+app.get(['/favicon.ico', '/favicon.png', '/apple-touch-icon*.png'], (req, res) => {
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.send(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌽</text></svg>`);
+});
+
+app.get(['/robots.txt', '/manifest.json', '/site.webmanifest'], (req, res) => {
+  res.status(204).end();
+});
 
 // ==========================================
 // MONGODB CONNECTION
