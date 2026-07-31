@@ -37,16 +37,11 @@ export default function CreatePost() {
   const handleFile = (file) => {
     if (!file) return;
 
-    const isAdmin = user?.role === 'ADMIN';
-    const maxVideoSize = isAdmin ? 1024 * 1024 * 1024 : 500 * 1024 * 1024; // 1 GB for ADMIN, 500 MB for regular users
-    const maxPhotoSize = 50 * 1024 * 1024; // 50 MB for photos
+    const maxVideoSize = 100 * 1024 * 1024; // 100 MB Cloudinary Cloud CDN limit
+    const maxPhotoSize = 50 * 1024 * 1024;  // 50 MB for photos
 
     if (file.type.startsWith('video/') && file.size > maxVideoSize) {
-      if (isAdmin) {
-        showToast('Video exceeds Admin limit of 1 GB', 'error');
-      } else {
-        showToast('Regular users can upload videos up to 500 MB. Admin account required for 1 GB video uploads!', 'error');
-      }
+      showToast('Video size exceeds Cloudinary Cloud CDN limit of 100 MB. Please select a video under 100 MB.', 'error');
       return;
     }
 
@@ -196,9 +191,7 @@ export default function CreatePost() {
                 <p className="drop-zone-sub">
                   {postType === 'photo'
                     ? 'JPG, PNG, GIF, WebP (max 50 MB)'
-                    : user?.role === 'ADMIN'
-                    ? 'MP4, WebM, MOV (Admin limit: 1 GB)'
-                    : 'MP4, WebM, MOV (User limit: 500 MB · Admin: 1 GB)'}
+                    : 'MP4, WebM, MOV (Cloudinary Cloud CDN limit: 100 MB)'}
                 </p>
                 <button className="btn-secondary" type="button">Browse Files</button>
               </div>

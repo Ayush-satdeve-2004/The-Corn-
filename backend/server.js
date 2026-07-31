@@ -494,7 +494,7 @@ function safeCloudinaryUpload(filePath, isVideo, options) {
   });
 }
 
-// Upload media to Cloudinary with local storage fallback for large files
+// Upload media 100% directly to Cloudinary CDN (No local disk storage fallback)
 app.post('/api/upload', upload.single('media'), async (req, res) => {
   try {
     if (!req.file) {
@@ -502,20 +502,23 @@ app.post('/api/upload', upload.single('media'), async (req, res) => {
     }
 
     const isVideo = req.file.mimetype.startsWith('video/');
-    const userId = req.headers['x-user-id'] || req.body.userId;
 
-    if (userId && isVideo) {
-      const u = await User.findById(userId).catch(() => null);
-      const isAdmin = u && u.role === 'ADMIN';
-      const maxAllowedSize = isAdmin ? 1024 * 1024 * 1024 : 500 * 1024 * 1024;
-      if (req.file.size > maxAllowedSize) {
-        if (fs.existsSync(req.file.path)) fs.unlink(req.file.path, () => {});
-        return res.status(400).json({
-          error: isAdmin
-            ? 'Video exceeds Admin limit of 1 GB.'
-            : 'Regular users can upload videos up to 500 MB. Admin account required for 1 GB video uploads!'
-        });
-      }
+    // Cloudinary Free Tier max single file upload limit: 100 MB (104,857,600 bytes)
+    const MAX_CLOUDINARY_VIDEO_SIZE = 100 * 1024 * 1024; // 100 MB
+    const MAX_CLOUDINARY_PHOTO_SIZE = 50 * 1024 * 1024;  // 50 MB
+
+    if (isVideo && req.file.size > MAX_CLOUDINARY_VIDEO_SIZE) {
+      if (fs.existsSync(req.file.path)) fs.unlink(req.file.path, () => {});
+      return res.status(400).json({
+        error: `Video size (${(req.file.size / 1024 / 1024).toFixed(1)} MB) exceeds Cloudinary Cloud CDN 100 MB limit. Please select a video under 100 MB.`
+      });
+    }
+
+    if (!isVideo && req.file.size > MAX_CLOUDINARY_PHOTO_SIZE) {
+      if (fs.existsSync(req.file.path)) fs.unlink(req.file.path, () => {});
+      return res.status(400).json({
+        error: `Photo size (${(req.file.size / 1024 / 1024).toFixed(1)} MB) exceeds Cloudinary 50 MB limit.`
+      });
     }
 
     const options = {
@@ -527,62 +530,30 @@ app.post('/api/upload', upload.single('media'), async (req, res) => {
       options.transformation = [{ quality: 'auto', fetch_format: 'auto' }];
     }
 
-    // Only attempt Cloudinary for files <= 95 MB (Cloudinary Free Tier limit is ~95-100 MB)
-    if (req.file.size <= 95 * 1024 * 1024) {
-      try {
-        const result = await safeCloudinaryUpload(req.file.path, isVideo, options);
-        const finalUrl = result?.secure_url || result?.url;
-
-        if (finalUrl) {
-          if (req.file && fs.existsSync(req.file.path)) {
-            fs.unlink(req.file.path, () => {});
-          }
-          console.log(`✅ Media uploaded successfully to Cloudinary: ${finalUrl}`);
-          return res.json({ url: finalUrl, filename: result.public_id || 'media' });
-        }
-      } catch (cloudinaryErr) {
-        console.error('❌ Cloudinary upload notice:', cloudinaryErr.message || cloudinaryErr);
-      }
-    } else {
-      console.log(`ℹ️ File size (${(req.file.size / 1024 / 1024).toFixed(1)} MB) exceeds Cloudinary 95 MB limit: Bypassing Cloudinary for instant direct backend upload.`);
-    }
-
-    // Primary Fallback: Convert to permanent Data URI stored directly in MongoDB Atlas for files <= 15 MB
     try {
-      const ext = (req.file && path.extname(req.file.originalname)) || (isVideo ? '.mp4' : '.jpg');
-      const mime = (req.file && req.file.mimetype) || (isVideo ? 'video/mp4' : 'image/jpeg');
+      const result = await safeCloudinaryUpload(req.file.path, isVideo, options);
+      const finalUrl = result?.secure_url || result?.url;
 
-      if (req.file && req.file.size <= 15 * 1024 * 1024) {
-        const fileBuffer = fs.readFileSync(req.file.path);
-        const base64Data = fileBuffer.toString('base64');
-        const dataUrl = `data:${mime};base64,${base64Data}`;
-        if (fs.existsSync(req.file.path)) fs.unlink(req.file.path, () => {});
-        console.log(`✅ Media stored permanently in MongoDB Atlas as Data URI (${(req.file.size / 1024 / 1024).toFixed(2)} MB)`);
-        return res.json({ url: dataUrl, filename: `atlas_${Date.now()}${ext}` });
+      if (finalUrl) {
+        if (req.file && fs.existsSync(req.file.path)) {
+          fs.unlink(req.file.path, () => {});
+        }
+        console.log(`✅ Media uploaded successfully to Cloudinary CDN: ${finalUrl}`);
+        return res.json({ url: finalUrl, filename: result.public_id || 'media' });
       }
-
-      // Secondary Fallback for > 15 MB files: Copy to server uploads directory
-      const localFilename = `media_${Date.now()}_${Math.random().toString(36).substr(2, 6)}${ext}`;
-      const localPath = path.join(uploadsDir, localFilename);
-
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.copyFileSync(req.file.path, localPath);
-        fs.unlink(req.file.path, () => {});
-      }
-
-      const host = process.env.RENDER_EXTERNAL_URL || 'https://the-corn.onrender.com';
-      const localUrl = `${host}/uploads/${localFilename}`;
-      console.log(`✅ Media uploaded via backend storage fallback: ${localUrl}`);
-      return res.json({ url: localUrl, filename: localFilename });
-    } catch (fallbackErr) {
-      console.error('Fallback upload error:', fallbackErr);
-      if (req.file && fs.existsSync(req.file.path)) fs.unlink(req.file.path, () => {});
-      return res.status(500).json({ error: 'Media upload failed' });
+    } catch (cloudinaryErr) {
+      console.error('❌ Cloudinary upload error:', cloudinaryErr.message || cloudinaryErr);
     }
+
+    // Clean temp file
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlink(req.file.path, () => {});
+    }
+    return res.status(500).json({ error: 'Failed to upload media to Cloudinary Cloud CDN' });
   } catch (err) {
-    console.error('Upload error:', err);
     if (req.file && fs.existsSync(req.file.path)) fs.unlink(req.file.path, () => {});
-    return res.status(500).json({ error: 'Upload error: ' + (err.message || 'Server error') });
+    console.error('Upload error:', err);
+    res.status(500).json({ error: 'Media upload failed' });
   }
 });
 
