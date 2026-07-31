@@ -542,9 +542,21 @@ app.post('/api/upload', upload.single('media'), async (req, res) => {
       console.error('❌ Cloudinary upload notice:', cloudinaryErr.message || cloudinaryErr);
     }
 
-    // Fallback: Copy to server uploads directory (file is STILL intact on disk!)
+    // Primary Fallback: Convert to permanent Data URI stored directly in MongoDB Atlas for files <= 15 MB
     try {
       const ext = (req.file && path.extname(req.file.originalname)) || (isVideo ? '.mp4' : '.jpg');
+      const mime = (req.file && req.file.mimetype) || (isVideo ? 'video/mp4' : 'image/jpeg');
+
+      if (req.file && req.file.size <= 15 * 1024 * 1024) {
+        const fileBuffer = fs.readFileSync(req.file.path);
+        const base64Data = fileBuffer.toString('base64');
+        const dataUrl = `data:${mime};base64,${base64Data}`;
+        if (fs.existsSync(req.file.path)) fs.unlink(req.file.path, () => {});
+        console.log(`✅ Media stored permanently in MongoDB Atlas as Data URI (${(req.file.size / 1024 / 1024).toFixed(2)} MB)`);
+        return res.json({ url: dataUrl, filename: `atlas_${Date.now()}${ext}` });
+      }
+
+      // Secondary Fallback for > 15 MB files: Copy to server uploads directory
       const localFilename = `media_${Date.now()}_${Math.random().toString(36).substr(2, 6)}${ext}`;
       const localPath = path.join(uploadsDir, localFilename);
 
