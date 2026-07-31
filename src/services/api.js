@@ -1,4 +1,8 @@
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5001/api'
+    : 'https://the-corn.onrender.com/api');
 
 async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;

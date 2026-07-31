@@ -424,7 +424,8 @@ app.post('/api/upload', upload.single('media'), async (req, res) => {
     fs.copyFileSync(req.file.path, localPath);
     fs.unlink(req.file.path, () => {});
 
-    const localUrl = `http://localhost:5001/uploads/${localFilename}`;
+    const host = process.env.RENDER_EXTERNAL_URL || 'http://localhost:5001';
+    const localUrl = `${host}/uploads/${localFilename}`;
     console.log(`✅ Media uploaded successfully via local storage: ${localUrl}`);
     return res.json({ url: localUrl, filename: localFilename });
 
