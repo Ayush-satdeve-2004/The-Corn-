@@ -527,19 +527,24 @@ app.post('/api/upload', upload.single('media'), async (req, res) => {
       options.transformation = [{ quality: 'auto', fetch_format: 'auto' }];
     }
 
-    try {
-      const result = await safeCloudinaryUpload(req.file.path, isVideo, options);
-      const finalUrl = result?.secure_url || result?.url;
+    // Only attempt Cloudinary for files <= 95 MB (Cloudinary Free Tier limit is ~95-100 MB)
+    if (req.file.size <= 95 * 1024 * 1024) {
+      try {
+        const result = await safeCloudinaryUpload(req.file.path, isVideo, options);
+        const finalUrl = result?.secure_url || result?.url;
 
-      if (finalUrl) {
-        if (req.file && fs.existsSync(req.file.path)) {
-          fs.unlink(req.file.path, () => {});
+        if (finalUrl) {
+          if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlink(req.file.path, () => {});
+          }
+          console.log(`✅ Media uploaded successfully to Cloudinary: ${finalUrl}`);
+          return res.json({ url: finalUrl, filename: result.public_id || 'media' });
         }
-        console.log(`✅ Media uploaded successfully to Cloudinary: ${finalUrl}`);
-        return res.json({ url: finalUrl, filename: result.public_id || 'media' });
+      } catch (cloudinaryErr) {
+        console.error('❌ Cloudinary upload notice:', cloudinaryErr.message || cloudinaryErr);
       }
-    } catch (cloudinaryErr) {
-      console.error('❌ Cloudinary upload notice:', cloudinaryErr.message || cloudinaryErr);
+    } else {
+      console.log(`ℹ️ File size (${(req.file.size / 1024 / 1024).toFixed(1)} MB) exceeds Cloudinary 95 MB limit: Bypassing Cloudinary for instant direct backend upload.`);
     }
 
     // Primary Fallback: Convert to permanent Data URI stored directly in MongoDB Atlas for files <= 15 MB
