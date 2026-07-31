@@ -438,14 +438,58 @@ app.get('/api/posts', async (req, res) => {
   }
 });
 
-// Promise helper for Cloudinary streaming upload
+// Promise helper for Cloudinary streaming upload with safe error catching
 function uploadStreamToCloudinary(filePath, options) {
   return new Promise((resolve, reject) => {
+    if (!filePath || !fs.existsSync(filePath)) {
+      return reject(new Error('File path does not exist'));
+    }
+    const readStream = fs.createReadStream(filePath);
+    readStream.on('error', (err) => {
+      console.warn('⚠️ ReadStream error caught:', err.message);
+      reject(err);
+    });
     const stream = cloudinary.uploader.upload_stream(options, (error, result) => {
       if (error) return reject(error);
       resolve(result);
     });
-    fs.createReadStream(filePath).pipe(stream);
+    readStream.pipe(stream);
+  });
+}
+
+function safeCloudinaryUpload(filePath, isVideo, options) {
+  return new Promise((resolve, reject) => {
+    if (!filePath || !fs.existsSync(filePath)) {
+      return reject(new Error('Upload file path missing'));
+    }
+    try {
+      if (isVideo) {
+        cloudinary.uploader.upload(
+          filePath,
+          { resource_type: 'video', folder: 'thecorn' },
+          (error, result) => {
+            if (error) {
+              console.warn('Standard video upload notice, trying upload_large:', error.message || error);
+              if (!fs.existsSync(filePath)) return reject(error);
+              cloudinary.uploader.upload_large(
+                filePath,
+                { resource_type: 'video', folder: 'thecorn', chunk_size: 6000000 },
+                (err2, res2) => {
+                  if (err2) return reject(err2);
+                  resolve(res2);
+                }
+              );
+            } else {
+              resolve(result);
+            }
+          }
+        );
+      } else {
+        uploadStreamToCloudinary(filePath, options).then(resolve).catch(reject);
+      }
+    } catch (e) {
+      reject(e);
+    }
   });
 }
 
@@ -464,7 +508,7 @@ app.post('/api/upload', upload.single('media'), async (req, res) => {
       const isAdmin = u && u.role === 'ADMIN';
       const maxAllowedSize = isAdmin ? 1024 * 1024 * 1024 : 500 * 1024 * 1024;
       if (req.file.size > maxAllowedSize) {
-        fs.unlink(req.file.path, () => {});
+        if (fs.existsSync(req.file.path)) fs.unlink(req.file.path, () => {});
         return res.status(400).json({
           error: isAdmin
             ? 'Video exceeds Admin limit of 1 GB.'
@@ -483,23 +527,7 @@ app.post('/api/upload', upload.single('media'), async (req, res) => {
     }
 
     try {
-      let result;
-      if (isVideo) {
-        result = await cloudinary.uploader.upload(req.file.path, {
-          resource_type: 'video',
-          folder: 'thecorn'
-        }).catch(err => {
-          console.warn('Standard video upload notice, trying upload_large:', err.message || err);
-          return cloudinary.uploader.upload_large(req.file.path, {
-            resource_type: 'video',
-            folder: 'thecorn',
-            chunk_size: 6000000
-          });
-        });
-      } else {
-        result = await uploadStreamToCloudinary(req.file.path, options);
-      }
-
+      const result = await safeCloudinaryUpload(req.file.path, isVideo, options);
       const finalUrl = result?.secure_url || result?.url;
 
       if (finalUrl) {
