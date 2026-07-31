@@ -1,0 +1,146 @@
+/* ============================================
+   App Layout & Global Page Styles
+   ============================================ */
+
+.app-container {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--cream);
+  position: relative;
+}
+
+/* Main content area — leave room for bottom navbar */
+.app-container > :first-child {
+  flex: 1;
+  padding-bottom: 80px;
+}
+
+/* ============================================
+   App Loading Screen
+   ============================================ */
+
+.app-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--cream);
+  gap: var(--space-md);
+}
+
+.app-loader .loader-corn {
+  font-size: 4rem;
+  animation: cornBounce 1.2s ease-in-out infinite;
+}
+
+.app-loader p {
+  font-size: var(--text-lg);
+  color: var(--chocolate);
+  font-weight: 500;
+  opacity: 0.7;
+  animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes cornBounce {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-20px) rotate(-10deg);
+  }
+  50% {
+    transform: translateY(0) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-10px) rotate(10deg);
+  }
+}
+
+/* ============================================
+   Page Transition Wrapper
+   ============================================ */
+
+.page-enter {
+  animation: pageSlideIn 0.35s ease-out forwards;
+}
+
+@keyframes pageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   Responsive Adjustments
+   ============================================ */
+
+@media (min-width: 768px) {
+  .app-container > :first-child {
+    padding-bottom: 0;
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-container > :first-child {
+    max-width: 680px;
+  }
+}
+
+/* Privacy, Anti-Screenshot & Anti-Screen-Recording Obscuration */
+body.privacy-obscure {
+  filter: blur(35px) grayscale(100%) !important;
+  opacity: 0.05 !important;
+  transition: filter 0.15s ease, opacity 0.15s ease !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+@media print {
+  html, body {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}
+
+/* Privacy Shield Overlay */
+#corn-privacy-shield {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  background: #0D0603 !important;
+  z-index: 99999999 !important;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: all !important;
+}
+
+/* Global Anti-Selection & Anti-Highlight */
+* {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+input, textarea {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  user-select: text !important;
+}

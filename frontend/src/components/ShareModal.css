@@ -1,0 +1,99 @@
+/* ========================================
+   ShareModal Component
+   ======================================== */
+
+.share-modal-card {
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  width: 90%;
+  max-width: 440px;
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-xl);
+  animation: scaleIn 0.25s ease-out;
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+}
+
+.share-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+}
+.share-modal-header h3 { font-size: var(--text-lg); font-weight: 700; color: var(--chocolate); margin: 0; }
+
+.modal-close-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--sage-dark); padding: 4px; border-radius: 50%;
+  display: flex; transition: all var(--transition-fast);
+}
+.modal-close-btn:hover { background: var(--cream); color: var(--chocolate); }
+
+.share-note {
+  font-size: var(--text-xs);
+  color: var(--sage-dark);
+  background: var(--cream);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-md);
+}
+
+.share-search { margin-bottom: var(--space-sm) !important; }
+
+.share-friends-list {
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: var(--space-md);
+  min-height: 60px;
+}
+
+.share-empty { text-align: center; color: var(--sage-dark); font-size: var(--text-sm); padding: var(--space-md); }
+
+.share-friend-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.share-friend-row:hover { background: var(--cream); }
+.share-friend-row.selected { background: rgba(139, 83, 36, 0.08); }
+
+.share-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+.share-friend-info { flex: 1; }
+.share-friend-name { display: block; font-weight: 600; font-size: var(--text-sm); color: var(--chocolate); }
+.share-friend-username { display: block; font-size: var(--text-xs); color: var(--sage-dark); }
+
+.share-checkbox {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--cream-dark);
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+.share-checkbox.checked { background: var(--cinnamon); border-color: var(--cinnamon); }
+
+.share-send-btn { width: 100%; }
+
+.share-success {
+  text-align: center;
+  padding: var(--space-xl);
+}
+.share-success-icon {
+  width: 56px; height: 56px;
+  background: var(--success);
+  color: white;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem;
+  margin: 0 auto var(--space-md);
+  animation: scaleIn 0.3s ease-out;
+}
+.share-success p { color: var(--chocolate); font-weight: 600; margin: 0; }
