@@ -62,8 +62,9 @@ app.use('/uploads', (req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Accept-Ranges', 'bytes');
   next();
-}, express.static(uploadsDir));
+}, express.static(uploadsDir, { acceptRanges: true }));
 
 // Root Route (HTML page for browsers with embedded SVG favicon, JSON for API clients)
 app.get('/', (req, res) => {
