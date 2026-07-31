@@ -8,10 +8,12 @@ import Toast from '../components/Toast';
 import { useNavigate } from 'react-router-dom';
 import './AdminPanel.css';
 
+import AdminAnalytics from '../components/AdminAnalytics';
+
 export default function AdminPanel() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'active' | 'posts'
+  const [activeTab, setActiveTab] = useState('analytics'); // 'analytics' | 'pending' | 'active' | 'posts'
   const [pendingUsers, setPendingUsers] = useState([]);
   const [activeUsers, setActiveUsers] = useState([]);
   const [allPosts, setAllPosts] = useState([]);
@@ -63,54 +65,65 @@ export default function AdminPanel() {
   }, []);
 
   useEffect(() => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    if (user.role !== 'ADMIN') {
+      showToast('Access denied: Admins only', 'error');
+      navigate('/');
+      return;
+    }
     loadData();
-  }, [loadData]);
+  }, [user, navigate, loadData]);
 
-  const handleApprove = async (userId) => {
-    await approveUser(userId);
-    showToast('User account approved!', 'success');
-    loadData();
+  const handleApprove = async (id) => {
+    try {
+      await approveUser(id);
+      showToast('User approved successfully', 'success');
+      loadData();
+    } catch (err) {
+      showToast('Failed to approve user', 'error');
+    }
   };
 
-  const handleReject = async (userId) => {
-    await rejectUser(userId);
-    showToast('User account rejected', 'info');
-    loadData();
+  const handleReject = async (id) => {
+    try {
+      await rejectUser(id);
+      showToast('User rejected', 'info');
+      loadData();
+    } catch (err) {
+      showToast('Failed to reject user', 'error');
+    }
   };
 
-  const handleDeleteUser = async (userId, name) => {
+  const handleDeleteUser = async (id, name) => {
     if (!window.confirm(`Are you sure you want to permanently delete ${name}'s account and all their posts?`)) {
       return;
     }
-
-    setDeletingId(userId);
+    setDeletingId(id);
     try {
-      const res = await deleteUserByAdmin(userId);
+      const res = await deleteUserByAdmin(id);
       if (res && res.success) {
         showToast(`User ${name} deleted`, 'success');
         loadData();
-      } else {
-        showToast('Failed to delete user', 'error');
       }
     } catch (err) {
-      showToast('Error deleting user', 'error');
+      showToast('Failed to delete user', 'error');
     } finally {
       setDeletingId(null);
     }
   };
 
-  const handleDeletePost = async (postId) => {
-    if (!window.confirm('Are you sure you want to delete this user post as Admin?')) {
-      return;
-    }
-
+  const handleDeletePostAdmin = async (postId) => {
+    if (!window.confirm('Are you sure you want to delete this post?')) return;
     setDeletingPostId(postId);
     try {
-      await deletePost(postId);
-      showToast('Post removed successfully!', 'success');
-      loadData();
+      await deletePost(postId, user.id);
+      showToast('Post deleted successfully', 'success');
+      setAllPosts(prev => prev.filter(p => p.id !== postId));
     } catch (err) {
-      showToast('Error deleting post', 'error');
+      showToast('Failed to delete post', 'error');
     } finally {
       setDeletingPostId(null);
     }
@@ -133,6 +146,12 @@ export default function AdminPanel() {
       {/* Admin Tabs */}
       <div className="admin-tabs">
         <button
+          className={`admin-tab ${activeTab === 'analytics' ? 'active' : ''}`}
+          onClick={() => setActiveTab('analytics')}
+        >
+          📊 Analytics & Graphs
+        </button>
+        <button
           className={`admin-tab ${activeTab === 'pending' ? 'active' : ''}`}
           onClick={() => setActiveTab('pending')}
         >
@@ -153,19 +172,10 @@ export default function AdminPanel() {
       </div>
 
       <div className="admin-content">
-        <div className="admin-section-header">
-          <h2>
-            {activeTab === 'pending' && `Pending Registrations (${pendingUsers.length})`}
-            {activeTab === 'active' && `Active Accounts (${activeUsers.length})`}
-            {activeTab === 'posts' && `All User Posts (${filteredPosts.length})`}
-          </h2>
-          <button className="btn-secondary refresh-admin-btn" onClick={loadData}>
-            Refresh
-          </button>
-        </div>
-
         {loading ? (
           <div className="loading-container"><div className="spinner" /></div>
+        ) : activeTab === 'analytics' ? (
+          <AdminAnalytics posts={allPosts} users={activeUsers} />
         ) : activeTab === 'pending' ? (
           /* Pending Users List */
           pendingUsers.length === 0 ? (
