@@ -469,24 +469,36 @@ app.post('/api/upload', upload.single('media'), async (req, res) => {
     try {
       let result;
       if (isVideo) {
-        result = await cloudinary.uploader.upload_large(req.file.path, {
-          resource_type: 'auto',
-          folder: 'thecorn',
-          chunk_size: 6000000
+        result = await cloudinary.uploader.upload(req.file.path, {
+          resource_type: 'video',
+          folder: 'thecorn'
+        }).catch(err => {
+          console.warn('Standard video upload notice, trying upload_large:', err.message || err);
+          return cloudinary.uploader.upload_large(req.file.path, {
+            resource_type: 'video',
+            folder: 'thecorn',
+            chunk_size: 6000000
+          });
         });
       } else {
         result = await uploadStreamToCloudinary(req.file.path, options);
       }
-      fs.unlink(req.file.path, () => {});
 
-      if (result && result.secure_url) {
-        console.log(`✅ Media uploaded successfully to Cloudinary: ${result.secure_url}`);
-        return res.json({ url: result.secure_url, filename: result.public_id });
+      const finalUrl = result?.secure_url || result?.url;
+
+      if (finalUrl) {
+        if (req.file && fs.existsSync(req.file.path)) {
+          fs.unlink(req.file.path, () => {});
+        }
+        console.log(`✅ Media uploaded successfully to Cloudinary: ${finalUrl}`);
+        return res.json({ url: finalUrl, filename: result.public_id || 'media' });
       }
-      throw new Error('Cloudinary did not return a valid secure_url');
     } catch (cloudinaryErr) {
       console.error('❌ Cloudinary upload notice:', cloudinaryErr.message || cloudinaryErr);
+    }
 
+    // Fallback: Copy to server uploads directory (file is STILL intact on disk!)
+    try {
       const ext = (req.file && path.extname(req.file.originalname)) || (isVideo ? '.mp4' : '.jpg');
       const localFilename = `media_${Date.now()}_${Math.random().toString(36).substr(2, 6)}${ext}`;
       const localPath = path.join(uploadsDir, localFilename);
@@ -494,13 +506,16 @@ app.post('/api/upload', upload.single('media'), async (req, res) => {
       if (req.file && fs.existsSync(req.file.path)) {
         fs.copyFileSync(req.file.path, localPath);
         fs.unlink(req.file.path, () => {});
-        const host = process.env.RENDER_EXTERNAL_URL || 'https://the-corn.onrender.com';
-        const localUrl = `${host}/uploads/${localFilename}`;
-        console.log(`⚠️ Media uploaded via backend storage fallback: ${localUrl}`);
-        return res.json({ url: localUrl, filename: localFilename });
       }
 
-      return res.status(500).json({ error: 'Upload failed: ' + (cloudinaryErr.message || 'Error') });
+      const host = process.env.RENDER_EXTERNAL_URL || 'https://the-corn.onrender.com';
+      const localUrl = `${host}/uploads/${localFilename}`;
+      console.log(`✅ Media uploaded via backend storage fallback: ${localUrl}`);
+      return res.json({ url: localUrl, filename: localFilename });
+    } catch (fallbackErr) {
+      console.error('Fallback upload error:', fallbackErr);
+      if (req.file && fs.existsSync(req.file.path)) fs.unlink(req.file.path, () => {});
+      return res.status(500).json({ error: 'Media upload failed' });
     }
   } catch (err) {
     console.error('Upload error:', err);
