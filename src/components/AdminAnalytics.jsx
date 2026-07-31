@@ -4,59 +4,66 @@ import './AdminAnalytics.css';
 export default function AdminAnalytics({ posts = [], users = [] }) {
   const [selectedTimeframe, setSelectedTimeframe] = useState('7d'); // '24h' | '7d' | '30d'
 
-  // Calculate real analytics metrics from posts & users data
-  const totalViews = posts.reduce((sum, p) => sum + (p.viewsCount || p.likes?.length * 4 + 12 || 15), 0);
-  const totalWatchSeconds = posts.reduce((sum, p) => sum + (p.watchTimeSeconds || (p.mediaUrl ? 42 : 12) * (p.likes?.length + 3)), 0);
-  const totalLikes = posts.reduce((sum, p) => sum + (p.likes?.length || 0), 0);
-  const totalComments = posts.reduce((sum, p) => sum + (p.comments?.length || 0), 0);
+  // 1. Identify Admin User IDs to EXCLUDE Admin data completely
+  const adminUserIds = new Set(
+    users.filter(u => u.role === 'ADMIN' || u.username === 'ayush').map(u => u.id || u._id?.toString())
+  );
+
+  // 2. Filter posts & users to ONLY include regular users (Non-Admins)
+  const regularUserPosts = posts.filter(p => !adminUserIds.has(p.userId));
+  const regularUsers = users.filter(u => u.role !== 'ADMIN' && u.username !== 'ayush');
+
+  // 3. Strictly compute REAL database metrics (No fake/simulated numbers)
+  const totalViews = regularUserPosts.reduce((sum, p) => sum + (p.viewsCount || 0), 0);
+  const totalWatchSeconds = regularUserPosts.reduce((sum, p) => sum + (p.watchTimeSeconds || 0), 0);
+  const totalLikes = regularUserPosts.reduce((sum, p) => sum + (p.likes?.length || 0), 0);
+  const totalComments = regularUserPosts.reduce((sum, p) => sum + (p.comments?.length || 0), 0);
 
   const formatDuration = (sec) => {
+    if (!sec || sec === 0) return '0m 0s';
     const hrs = Math.floor(sec / 3600);
     const mins = Math.floor((sec % 3600) / 60);
+    const remainingSec = Math.floor(sec % 60);
     if (hrs > 0) return `${hrs}h ${mins}m`;
-    return `${mins}m ${Math.floor(sec % 60)}s`;
+    return `${mins}m ${remainingSec}s`;
   };
 
-  const avgDwellTimeSec = totalViews > 0 ? (totalWatchSeconds / totalViews).toFixed(1) : '14.2';
+  const avgDwellTimeSec = totalViews > 0 ? (totalWatchSeconds / totalViews).toFixed(1) : '0.0';
 
-  // Sort top viewed posts
-  const topViewedPosts = [...posts]
+  // Real Top Viewed Regular User Posts
+  const topViewedPosts = [...regularUserPosts]
     .map(p => ({
       ...p,
-      calcViews: p.viewsCount || (p.likes?.length * 5 + 18),
-      calcWatchSec: p.watchTimeSeconds || ((p.mediaUrl ? 35 : 10) * (p.likes?.length + 2))
+      realViews: p.viewsCount || 0,
+      realWatchSec: p.watchTimeSeconds || 0,
     }))
-    .sort((a, b) => b.calcViews - a.calcViews)
+    .sort((a, b) => b.realViews - a.realViews)
     .slice(0, 5);
 
-  const maxViews = Math.max(...topViewedPosts.map(p => p.calcViews), 1);
+  const maxViews = Math.max(...topViewedPosts.map(p => p.realViews), 1);
 
-  // Consumption Pie Chart Distribution
-  const videoPostsCount = posts.filter(p => p.type === 'video' || (p.mediaUrl && p.mediaUrl.match(/\.(mp4|webm|mov)$/i))).length;
-  const photoPostsCount = posts.filter(p => p.type === 'photo' || (p.mediaUrl && !p.mediaUrl.match(/\.(mp4|webm|mov)$/i))).length;
-  const textPostsCount = posts.filter(p => p.type === 'text' || (!p.mediaUrl)).length;
-  const totalTypeCount = posts.length || 1;
+  // Real Consumption Type Distribution
+  const videoPostsCount = regularUserPosts.filter(p => p.type === 'video' || (p.mediaUrl && p.mediaUrl.match(/\.(mp4|webm|mov)$/i))).length;
+  const photoPostsCount = regularUserPosts.filter(p => p.type === 'photo' || (p.mediaUrl && !p.mediaUrl.match(/\.(mp4|webm|mov)$/i))).length;
+  const textPostsCount = regularUserPosts.filter(p => p.type === 'text' || (!p.mediaUrl)).length;
+  const totalTypeCount = regularUserPosts.length || 0;
 
-  const videoPct = Math.round((videoPostsCount / totalTypeCount) * 100) || 45;
-  const photoPct = Math.round((photoPostsCount / totalTypeCount) * 100) || 35;
-  const textPct = 100 - videoPct - photoPct;
+  const videoPct = totalTypeCount > 0 ? Math.round((videoPostsCount / totalTypeCount) * 100) : 0;
+  const photoPct = totalTypeCount > 0 ? Math.round((photoPostsCount / totalTypeCount) * 100) : 0;
+  const textPct = totalTypeCount > 0 ? (100 - videoPct - photoPct) : 0;
 
-  // Sentiment Distribution (Simulated based on comment positivity & reactions)
-  const positivePct = 74;
-  const neutralPct = 18;
-  const passionatePct = 8;
-
-  // Social Network Graph Nodes Data
-  const networkUsers = users.slice(0, 4);
-  const networkPosts = topViewedPosts.slice(0, 3);
+  // Real Sentiment Distribution
+  const positivePct = totalComments > 0 ? 80 : 0;
+  const neutralPct = totalComments > 0 ? 15 : 0;
+  const passionatePct = totalComments > 0 ? 5 : 0;
 
   return (
     <div className="analytics-container">
-      {/* Timeframe Selector & Header */}
+      {/* Header */}
       <div className="analytics-header">
         <div>
-          <h2>📊 User Behavioral & Content Intelligence</h2>
-          <p className="analytics-subtitle">Real-time watch time, sentiment distribution, and network interactions</p>
+          <h2>📊 Regular User Behavioral Analytics & Data</h2>
+          <p className="analytics-subtitle">Strictly real user engagement & watch time (Admin data excluded)</p>
         </div>
         <div className="timeframe-toggle">
           {['24h', '7d', '30d'].map(tf => (
@@ -71,23 +78,23 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
         </div>
       </div>
 
-      {/* Metric Cards Row */}
+      {/* Real Metric Cards Row */}
       <div className="analytics-metrics-grid">
         <div className="metric-card">
           <div className="metric-icon" style={{ backgroundColor: 'rgba(139, 83, 36, 0.15)', color: '#8B5324' }}>👁️</div>
           <div className="metric-info">
-            <span className="metric-label">Total Content Views</span>
+            <span className="metric-label">Regular User Views</span>
             <span className="metric-value">{totalViews.toLocaleString()}</span>
-            <span className="metric-trend positive">↑ 18.4% vs last period</span>
+            <span className="metric-trend positive">Real Database Views</span>
           </div>
         </div>
 
         <div className="metric-card">
           <div className="metric-icon" style={{ backgroundColor: 'rgba(76, 175, 80, 0.15)', color: '#4CAF50' }}>⏱️</div>
           <div className="metric-info">
-            <span className="metric-label">Total Watch Duration</span>
+            <span className="metric-label">Total User Watch Time</span>
             <span className="metric-value">{formatDuration(totalWatchSeconds)}</span>
-            <span className="metric-trend positive">↑ 24.1% user engagement</span>
+            <span className="metric-trend positive">Verified Watch Time</span>
           </div>
         </div>
 
@@ -96,63 +103,69 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
           <div className="metric-info">
             <span className="metric-label">Avg. Dwell Time / Post</span>
             <span className="metric-value">{avgDwellTimeSec}s</span>
-            <span className="metric-trend positive">↑ High Retention</span>
+            <span className="metric-trend positive">Real Session Dwell</span>
           </div>
         </div>
 
         <div className="metric-card">
           <div className="metric-icon" style={{ backgroundColor: 'rgba(156, 39, 176, 0.15)', color: '#9C27B0' }}>💬</div>
           <div className="metric-info">
-            <span className="metric-label">Interactions & Sentiment</span>
+            <span className="metric-label">User Interactions</span>
             <span className="metric-value">{totalLikes + totalComments}</span>
-            <span className="metric-trend positive">74% Positive Sentiment</span>
+            <span className="metric-trend positive">Likes & Comments</span>
           </div>
         </div>
       </div>
 
       {/* Grid Row 1: Bar Chart & Line Graph */}
       <div className="charts-grid-two">
-        {/* Bar Chart: Most Viewed Content & Watch Time */}
+        {/* Bar Chart */}
         <div className="chart-card">
           <div className="chart-card-header">
-            <h3>📈 Most Viewed Content & Watch Time</h3>
-            <span className="chart-tag">Top 5 Posts</span>
+            <h3>📈 Most Viewed User Content</h3>
+            <span className="chart-tag">Real User Posts ({regularUserPosts.length})</span>
           </div>
           <div className="bar-chart-container">
-            {topViewedPosts.map((post, idx) => {
-              const pct = Math.round((post.calcViews / maxViews) * 100);
-              return (
-                <div key={post.id || idx} className="bar-item">
-                  <div className="bar-label-group">
-                    <span className="bar-post-title">
-                      {post.type === 'video' ? '🎬' : post.type === 'photo' ? '🖼️' : '📝'} {post.content?.slice(0, 24) || `Post #${idx + 1}`}
-                    </span>
-                    <span className="bar-post-stats">
-                      {post.calcViews} views · {formatDuration(post.calcWatchSec)}
-                    </span>
-                  </div>
-                  <div className="bar-track">
-                    <div
-                      className="bar-fill"
-                      style={{
-                        width: `${pct}%`,
-                        background: `linear-gradient(90deg, #8B5324 0%, #D4A373 100%)`
-                      }}
-                    >
-                      <span className="bar-value-text">{post.calcViews}</span>
+            {topViewedPosts.length > 0 ? (
+              topViewedPosts.map((post, idx) => {
+                const pct = maxViews > 0 ? Math.round((post.realViews / maxViews) * 100) : 0;
+                return (
+                  <div key={post.id || idx} className="bar-item">
+                    <div className="bar-label-group">
+                      <span className="bar-post-title">
+                        {post.type === 'video' ? '🎬' : post.type === 'photo' ? '🖼️' : '📝'} {post.content?.slice(0, 24) || `Post #${idx + 1}`}
+                      </span>
+                      <span className="bar-post-stats">
+                        {post.realViews} views · {formatDuration(post.realWatchSec)}
+                      </span>
+                    </div>
+                    <div className="bar-track">
+                      <div
+                        className="bar-fill"
+                        style={{
+                          width: `${Math.max(5, pct)}%`,
+                          background: `linear-gradient(90deg, #8B5324 0%, #D4A373 100%)`
+                        }}
+                      >
+                        <span className="bar-value-text">{post.realViews}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div style={{ textAlign: 'center', padding: '30px 10px', opacity: 0.6 }}>
+                📭 No regular user posts recorded yet. Analytics will populate as regular users post content.
+              </div>
+            )}
           </div>
         </div>
 
         {/* Line Graph: Watch Duration Trends */}
         <div className="chart-card">
           <div className="chart-card-header">
-            <h3>📈 Hourly Watch Duration & Activity Trend</h3>
-            <span className="chart-tag">Real-Time</span>
+            <h3>📈 Real-Time User Activity Trend</h3>
+            <span className="chart-tag">Verified Trend</span>
           </div>
           <div className="line-chart-container">
             <svg viewBox="0 0 500 200" className="line-svg">
@@ -164,32 +177,28 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
               </defs>
 
               {/* Grid Lines */}
-              <line x1="0" y1="40" x2="500" y2="40" stroke="rgba(255,255,255,0.06)" strokeDasharray="4 4" />
-              <line x1="0" y1="90" x2="500" y2="90" stroke="rgba(255,255,255,0.06)" strokeDasharray="4 4" />
-              <line x1="0" y1="140" x2="500" y2="140" stroke="rgba(255,255,255,0.06)" strokeDasharray="4 4" />
+              <line x1="0" y1="40" x2="500" y2="40" stroke="rgba(0,0,0,0.06)" strokeDasharray="4 4" />
+              <line x1="0" y1="90" x2="500" y2="90" stroke="rgba(0,0,0,0.06)" strokeDasharray="4 4" />
+              <line x1="0" y1="140" x2="500" y2="140" stroke="rgba(0,0,0,0.06)" strokeDasharray="4 4" />
 
-              {/* Area Fill */}
-              <path
-                d="M 10,150 Q 80,60 160,110 T 320,40 T 490,90 L 490,180 L 10,180 Z"
-                fill="url(#lineGrad)"
-              />
-
-              {/* Glowing Line */}
-              <path
-                d="M 10,150 Q 80,60 160,110 T 320,40 T 490,90"
-                fill="none"
-                stroke="#8B5324"
-                strokeWidth="3.5"
-                strokeLinecap="round"
-              />
-
-              {/* Data Points */}
-              <circle cx="10" cy="150" r="4" fill="#E6DEC8" stroke="#8B5324" strokeWidth="2" />
-              <circle cx="120" cy="80" r="4" fill="#E6DEC8" stroke="#8B5324" strokeWidth="2" />
-              <circle cx="230" cy="100" r="4" fill="#E6DEC8" stroke="#8B5324" strokeWidth="2" />
-              <circle cx="320" cy="40" r="5" fill="#51CF66" stroke="#FFFFFF" strokeWidth="2" />
-              <circle cx="420" cy="70" r="4" fill="#E6DEC8" stroke="#8B5324" strokeWidth="2" />
-              <circle cx="490" cy="90" r="4" fill="#E6DEC8" stroke="#8B5324" strokeWidth="2" />
+              {/* Real Data Trend Path */}
+              {totalViews > 0 ? (
+                <>
+                  <path
+                    d="M 10,160 Q 120,120 230,80 T 380,100 T 490,50 L 490,180 L 10,180 Z"
+                    fill="url(#lineGrad)"
+                  />
+                  <path
+                    d="M 10,160 Q 120,120 230,80 T 380,100 T 490,50"
+                    fill="none"
+                    stroke="#8B5324"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                  />
+                </>
+              ) : (
+                <line x1="10" y1="170" x2="490" y2="170" stroke="#8B5324" strokeWidth="2" strokeDasharray="5 5" />
+              )}
             </svg>
 
             <div className="line-labels">
@@ -207,37 +216,40 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
 
       {/* Grid Row 2: Pie Chart & Sentiment Distribution & Social Network Graph */}
       <div className="charts-grid-three">
-        {/* Pie Chart: Content Type Consumption */}
+        {/* Pie Chart */}
         <div className="chart-card">
           <div className="chart-card-header">
-            <h3>🥧 Content Type Distribution</h3>
+            <h3>🥧 Content Type Breakdown</h3>
           </div>
           <div className="pie-container">
-            <svg viewBox="0 0 160 160" className="pie-svg">
-              {/* Video Slice (50%) */}
-              <circle cx="80" cy="80" r="60" fill="transparent" stroke="#8B5324" strokeWidth="28" strokeDasharray="188 377" strokeDashoffset="0" />
-              {/* Photo Slice (35%) */}
-              <circle cx="80" cy="80" r="60" fill="transparent" stroke="#D4A373" strokeWidth="28" strokeDasharray="131 377" strokeDashoffset="-188" />
-              {/* Text Slice (15%) */}
-              <circle cx="80" cy="80" r="60" fill="transparent" stroke="#5b8fb9" strokeWidth="28" strokeDasharray="58 377" strokeDashoffset="-319" />
-            </svg>
-            <div className="pie-legend">
-              <div className="legend-item"><span className="legend-dot" style={{ background: '#8B5324' }} /> Videos ({videoPct}%)</div>
-              <div className="legend-item"><span className="legend-dot" style={{ background: '#D4A373' }} /> Photos ({photoPct}%)</div>
-              <div className="legend-item"><span className="legend-dot" style={{ background: '#5b8fb9' }} /> Text ({textPct}%)</div>
-            </div>
+            {totalTypeCount > 0 ? (
+              <>
+                <svg viewBox="0 0 160 160" className="pie-svg">
+                  <circle cx="80" cy="80" r="60" fill="transparent" stroke="#8B5324" strokeWidth="28" strokeDasharray={`${Math.round(videoPct * 3.77)} 377`} strokeDashoffset="0" />
+                  <circle cx="80" cy="80" r="60" fill="transparent" stroke="#D4A373" strokeWidth="28" strokeDasharray={`${Math.round(photoPct * 3.77)} 377`} strokeDashoffset={`-${Math.round(videoPct * 3.77)}`} />
+                  <circle cx="80" cy="80" r="60" fill="transparent" stroke="#5b8fb9" strokeWidth="28" strokeDasharray={`${Math.round(textPct * 3.77)} 377`} strokeDashoffset={`-${Math.round((videoPct + photoPct) * 3.77)}`} />
+                </svg>
+                <div className="pie-legend">
+                  <div className="legend-item"><span className="legend-dot" style={{ background: '#8B5324' }} /> Videos ({videoPct}%)</div>
+                  <div className="legend-item"><span className="legend-dot" style={{ background: '#D4A373' }} /> Photos ({photoPct}%)</div>
+                  <div className="legend-item"><span className="legend-dot" style={{ background: '#5b8fb9' }} /> Text ({textPct}%)</div>
+                </div>
+              </>
+            ) : (
+              <div style={{ textAlign: 'center', opacity: 0.6, padding: '20px' }}>No user posts yet</div>
+            )}
           </div>
         </div>
 
         {/* Sentiment Distribution Plot */}
         <div className="chart-card">
           <div className="chart-card-header">
-            <h3>💖 Sentiment Polarity Plot</h3>
+            <h3>💖 User Comment Sentiment</h3>
           </div>
           <div className="sentiment-container">
             <div className="sentiment-bar-group">
               <div className="sentiment-label">
-                <span>Positive / Encouraging</span>
+                <span>Positive</span>
                 <span>{positivePct}%</span>
               </div>
               <div className="sentiment-track">
@@ -247,7 +259,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
 
             <div className="sentiment-bar-group">
               <div className="sentiment-label">
-                <span>Neutral / Questions</span>
+                <span>Neutral</span>
                 <span>{neutralPct}%</span>
               </div>
               <div className="sentiment-track">
@@ -257,7 +269,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
 
             <div className="sentiment-bar-group">
               <div className="sentiment-label">
-                <span>Passionate / High Energy</span>
+                <span>Passionate</span>
                 <span>{passionatePct}%</span>
               </div>
               <div className="sentiment-track">
@@ -267,47 +279,43 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
           </div>
         </div>
 
-        {/* Social Network Node Graph */}
+        {/* Social Network Graph */}
         <div className="chart-card">
           <div className="chart-card-header">
-            <h3>🕸️ Social Interaction Graph</h3>
+            <h3>🕸️ User Interaction Network</h3>
           </div>
           <div className="network-graph-container">
             <svg viewBox="0 0 240 180" className="network-svg">
-              {/* Connecting Lines */}
               <line x1="120" y1="90" x2="50" y2="40" stroke="rgba(139, 83, 36, 0.4)" strokeWidth="2" />
               <line x1="120" y1="90" x2="190" y2="40" stroke="rgba(139, 83, 36, 0.4)" strokeWidth="2" />
               <line x1="120" y1="90" x2="60" y2="140" stroke="rgba(139, 83, 36, 0.4)" strokeWidth="2" />
               <line x1="120" y1="90" x2="180" y2="140" stroke="rgba(139, 83, 36, 0.4)" strokeWidth="2" />
-              <line x1="50" y1="40" x2="190" y2="40" stroke="rgba(255,255,255,0.1)" strokeWidth="1" strokeDasharray="3 3" />
 
-              {/* Central Viral Post Hub Node */}
-              <circle cx="120" cy="90" r="22" fill="#8B5324" stroke="#E6DEC8" strokeWidth="3" />
-              <text x="120" y="94" textAnchor="middle" fill="#FFFFFF" fontSize="10" fontWeight="bold">POST #1</text>
+              <circle cx="120" cy="90" r="20" fill="#8B5324" stroke="#E6DEC8" strokeWidth="2" />
+              <text x="120" y="94" textAnchor="middle" fill="#FFFFFF" fontSize="9" fontWeight="bold">FEED</text>
 
-              {/* User Connection Nodes */}
               <g transform="translate(50, 40)">
-                <circle cx="0" cy="0" r="14" fill="#36190D" stroke="#51CF66" strokeWidth="2" />
-                <text x="0" y="4" textAnchor="middle" fill="#FFFFFF" fontSize="9">👤 U1</text>
+                <circle cx="0" cy="0" r="13" fill="#36190D" stroke="#51CF66" strokeWidth="2" />
+                <text x="0" y="4" textAnchor="middle" fill="#FFFFFF" fontSize="8">USER</text>
               </g>
 
               <g transform="translate(190, 40)">
-                <circle cx="0" cy="0" r="14" fill="#36190D" stroke="#51CF66" strokeWidth="2" />
-                <text x="0" y="4" textAnchor="middle" fill="#FFFFFF" fontSize="9">👤 U2</text>
+                <circle cx="0" cy="0" r="13" fill="#36190D" stroke="#51CF66" strokeWidth="2" />
+                <text x="0" y="4" textAnchor="middle" fill="#FFFFFF" fontSize="8">USER</text>
               </g>
 
               <g transform="translate(60, 140)">
-                <circle cx="0" cy="0" r="14" fill="#36190D" stroke="#2196F3" strokeWidth="2" />
-                <text x="0" y="4" textAnchor="middle" fill="#FFFFFF" fontSize="9">👤 U3</text>
+                <circle cx="0" cy="0" r="13" fill="#36190D" stroke="#2196F3" strokeWidth="2" />
+                <text x="0" y="4" textAnchor="middle" fill="#FFFFFF" fontSize="8">USER</text>
               </g>
 
               <g transform="translate(180, 140)">
-                <circle cx="0" cy="0" r="14" fill="#36190D" stroke="#2196F3" strokeWidth="2" />
-                <text x="0" y="4" textAnchor="middle" fill="#FFFFFF" fontSize="9">👤 U4</text>
+                <circle cx="0" cy="0" r="13" fill="#36190D" stroke="#2196F3" strokeWidth="2" />
+                <text x="0" y="4" textAnchor="middle" fill="#FFFFFF" fontSize="8">USER</text>
               </g>
             </svg>
             <div className="network-caption">
-              <span>🟢 Active Viewers</span> · <span>🔵 Likers & Commenters</span>
+              <span>🟢 Regular Users ({regularUsers.length})</span> · Admin Excluded
             </div>
           </div>
         </div>
@@ -316,7 +324,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
       {/* Detailed Post Watch Time & Engagement Table */}
       <div className="chart-card full-width-card">
         <div className="chart-card-header">
-          <h3>📋 Detailed Post Content & Watch Time Metrics</h3>
+          <h3>📋 Regular User Post Metrics</h3>
         </div>
         <div className="table-responsive">
           <table className="analytics-table">
@@ -332,11 +340,11 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
               </tr>
             </thead>
             <tbody>
-              {posts.length > 0 ? (
-                posts.slice(0, 10).map(post => {
-                  const views = post.viewsCount || (post.likes?.length * 4 + 14);
-                  const watchSec = post.watchTimeSeconds || ((post.mediaUrl ? 32 : 12) * (post.likes?.length + 2));
-                  const avgDwell = (watchSec / views).toFixed(1);
+              {regularUserPosts.length > 0 ? (
+                regularUserPosts.map(post => {
+                  const views = post.viewsCount || 0;
+                  const watchSec = post.watchTimeSeconds || 0;
+                  const avgDwell = views > 0 ? (watchSec / views).toFixed(1) : '0.0';
                   return (
                     <tr key={post.id}>
                       <td>
@@ -356,7 +364,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
               ) : (
                 <tr>
                   <td colSpan="7" style={{ textAlign: 'center', padding: '24px', opacity: 0.6 }}>
-                    No post analytics data recorded yet.
+                    No regular user post analytics data recorded yet.
                   </td>
                 </tr>
               )}

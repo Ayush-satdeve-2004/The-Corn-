@@ -38,24 +38,7 @@ export default function AdminPanel() {
       ]);
       setPendingUsers(pendingRes || []);
       setActiveUsers(activeRes || []);
-
-      // Enrich posts with user details
-      const userCache = {};
-      const enriched = await Promise.all(
-        (rawPosts || []).map(async p => {
-          if (!userCache[p.userId]) {
-            userCache[p.userId] = await getUserById(p.userId);
-          }
-          const author = userCache[p.userId];
-          return {
-            ...p,
-            authorName: author?.fullName || 'User',
-            authorUsername: author?.username || 'user',
-            authorAvatar: author?.avatar || '',
-          };
-        })
-      );
-      setAllPosts(enriched);
+      setAllPosts(rawPosts || []);
     } catch (err) {
       console.error(err);
       showToast('Error loading admin data', 'error');
