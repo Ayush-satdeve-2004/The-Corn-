@@ -50,6 +50,20 @@ app.use('/uploads', (req, res, next) => {
   next();
 }, express.static(uploadsDir));
 
+// Root Health Check Route (prevents "Cannot GET /" error on Render)
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    message: '🌽 The Corn Backend API is running live!',
+    version: '1.0.0',
+    endpoints: '/api/posts, /api/auth, /api/users'
+  });
+});
+
+app.get('/api', (req, res) => {
+  res.json({ status: 'online', message: 'The Corn API Service' });
+});
+
 // ==========================================
 // MONGODB CONNECTION
 // ==========================================
