@@ -59,22 +59,14 @@ export default function Home() {
   const loadFeed = useCallback(async () => {
     try {
       const rawPosts = await getFeed();
-      const userCache = {};
-      const enriched = await Promise.all(
-        rawPosts.map(async post => {
-          if (!userCache[post.userId]) {
-            userCache[post.userId] = await getUserById(post.userId);
-          }
-          const author = userCache[post.userId];
-          return {
-            ...post,
-            authorName: author?.fullName || 'Anonymous',
-            authorUsername: author?.username || 'user',
-            authorAvatar: author?.avatar || '',
-            timeAgo: getTimeAgo(post.timestamp),
-          };
-        })
-      );
+      const enriched = rawPosts.map(post => ({
+        ...post,
+        authorName: post.authorName || 'User',
+        authorUsername: post.authorUsername || 'user',
+        authorAvatar: post.authorAvatar || '',
+        timeAgo: getTimeAgo(post.timestamp),
+      }));
+
       setPosts(rawPosts);
       setEnrichedPosts(enriched);
 
@@ -83,8 +75,7 @@ export default function Home() {
       } catch {}
 
       if (user) {
-        const f = await getFriends(user.id);
-        setFriends(f);
+        getFriends(user.id).then(f => setFriends(f)).catch(() => {});
       }
     } catch (err) {
       console.error('Error loading feed:', err);
@@ -93,11 +84,21 @@ export default function Home() {
 
   useEffect(() => {
     let isMounted = true;
-    setIsLoading(true);
+    if (enrichedPosts.length === 0) setIsLoading(true);
+
     loadFeed().finally(() => {
       if (isMounted) setIsLoading(false);
     });
-    return () => { isMounted = false; };
+
+    // Real-Time Background Live Polling: Auto-fetches new posts every 4 seconds for all active users!
+    const pollInterval = setInterval(() => {
+      loadFeed();
+    }, 4000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(pollInterval);
+    };
   }, [loadFeed]);
 
   // Refresh feed automatically when a background upload completes
@@ -106,12 +107,6 @@ export default function Home() {
       loadFeed();
     }
   }, [activeUpload?.status, loadFeed]);
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await loadFeed();
-    setTimeout(() => setIsRefreshing(false), 500);
-  };
 
   const handleLike = async (postId) => {
     if (!user) return;

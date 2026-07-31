@@ -424,14 +424,26 @@ app.delete('/api/users/:id', async (req, res) => {
 // POST ROUTES
 // ==========================================
 
-// Get Feed Posts
+// Get Feed Posts (populated with User info for 0ms instant loading)
 app.get('/api/posts', async (req, res) => {
   try {
-    const posts = await Post.find().sort({ timestamp: -1 });
+    const posts = await Post.find().sort({ timestamp: -1 }).lean();
+    const userIds = [...new Set(posts.map(p => p.userId).filter(Boolean))];
+    const users = await User.find({ _id: { $in: userIds } }, 'fullName username avatar role').lean();
+    const userMap = {};
+    users.forEach(u => {
+      userMap[u._id.toString()] = u;
+    });
+
     const result = posts.map(p => {
-      const obj = p.toObject();
-      obj.id = uid(p);
-      return obj;
+      const u = userMap[p.userId] || {};
+      return {
+        ...p,
+        id: p._id.toString(),
+        authorName: u.fullName || 'User',
+        authorUsername: u.username || 'user',
+        authorAvatar: u.avatar || '',
+      };
     });
     res.json(result);
   } catch (err) {
