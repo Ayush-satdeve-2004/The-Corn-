@@ -1,61 +1,31 @@
 import React, { createContext, useContext, useState } from 'react';
 import { uploadMedia, createPost } from '../services/api';
-import { compressVideo } from '../services/videoCompressor';
 
 const UploadContext = createContext();
 
 export function UploadProvider({ children }) {
   const [activeUpload, setActiveUpload] = useState(null); 
-  // activeUpload: { status: 'compressing'|'uploading'|'publishing', progress: 0, loadedMb: '0', totalMb: '0', message: '' }
+  // activeUpload: { status: 'uploading'|'publishing'|'done'|'error', progress: 0, loadedMb: '0', totalMb: '0', message: '' }
 
   const startUpload = async (postData, mediaFile, onSuccess) => {
+    const totalSizeMb = mediaFile ? (mediaFile.size / (1024 * 1024)).toFixed(1) : '0';
+
     setActiveUpload({
-      status: 'compressing',
+      status: 'uploading',
       progress: 5,
       loadedMb: '0',
-      totalMb: mediaFile ? (mediaFile.size / (1024 * 1024)).toFixed(1) : '0',
-      message: mediaFile && mediaFile.type.startsWith('video/') ? 'Optimizing & Compressing Video to 720p...' : 'Preparing Upload...'
+      totalMb: totalSizeMb,
+      message: 'Uploading Media...'
     });
 
     try {
-      let fileToUpload = mediaFile;
-
-      // 1. Compress Video if it's a video
-      if (mediaFile && mediaFile.type.startsWith('video/')) {
-        try {
-          fileToUpload = await compressVideo(mediaFile, (compressPct) => {
-            setActiveUpload(prev => prev ? {
-              ...prev,
-              status: 'compressing',
-              progress: Math.min(40, Math.round(compressPct * 0.4)),
-              message: `Optimizing Video 720p... ${compressPct}%`
-            } : null);
-          });
-        } catch (compressErr) {
-          console.warn('Compression notice, uploading original:', compressErr);
-        }
-      }
-
-      // Update total file size after compression
-      const finalSizeMb = fileToUpload ? (fileToUpload.size / (1024 * 1024)).toFixed(1) : '0';
-
-      setActiveUpload(prev => prev ? {
-        ...prev,
-        status: 'uploading',
-        progress: 40,
-        totalMb: finalSizeMb,
-        message: 'Uploading Media...'
-      } : null);
-
-      // 2. Upload Media to Server via XHR with Progress
       let mediaUrl = '';
-      if (fileToUpload) {
-        const uploadResult = await uploadMedia(fileToUpload, (percent, loaded, total) => {
-          const mappedPct = 40 + Math.round(percent * 0.55);
+      if (mediaFile) {
+        const uploadResult = await uploadMedia(mediaFile, (percent, loaded, total) => {
           setActiveUpload(prev => prev ? {
             ...prev,
             status: 'uploading',
-            progress: Math.min(95, mappedPct),
+            progress: Math.min(95, Math.max(10, percent)),
             loadedMb: (loaded / (1024 * 1024)).toFixed(1),
             totalMb: (total / (1024 * 1024)).toFixed(1),
             message: `Uploading Media... ${percent}%`
@@ -71,7 +41,7 @@ export function UploadProvider({ children }) {
         message: 'Publishing Post...'
       } : null);
 
-      // 3. Create Post in MongoDB
+      // Create Post in MongoDB
       await createPost({
         ...postData,
         mediaUrl: mediaUrl,
@@ -88,7 +58,7 @@ export function UploadProvider({ children }) {
 
       setTimeout(() => {
         setActiveUpload(null);
-      }, 3500);
+      }, 3000);
 
     } catch (err) {
       console.error('Background upload error:', err);
