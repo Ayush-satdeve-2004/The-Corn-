@@ -50,30 +50,63 @@ app.use('/uploads', (req, res, next) => {
   next();
 }, express.static(uploadsDir));
 
-// Root Health Check Route (prevents "Cannot GET /" error on Render)
+// Root Route (HTML page for browsers with embedded SVG favicon, JSON for API clients)
 app.get('/', (req, res) => {
-  res.json({
-    status: 'online',
-    message: '🌽 The Corn Backend API is running live!',
-    version: '1.0.0',
-    endpoints: '/api/posts, /api/auth, /api/users'
-  });
+  if (req.headers.accept && req.headers.accept.includes('application/json')) {
+    return res.json({
+      status: 'online',
+      message: '🌽 The Corn Backend API is running live!',
+      version: '1.0.0',
+      endpoints: '/api/posts, /api/auth, /api/users'
+    });
+  }
+
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Corn Backend API</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌽</text></svg>">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #FBF8EB; color: #36190D; padding: 2rem; display: flex; justify-content: center; align-items: center; min-height: 80vh; margin: 0; }
+    .card { background: white; padding: 2.5rem; border-radius: 16px; box-shadow: 0 10px 30px rgba(54, 25, 13, 0.1); max-width: 500px; text-align: center; border: 1px solid #9CA886; }
+    h1 { margin-top: 0; color: #8B5324; font-size: 1.8rem; }
+    .status { display: inline-block; background: #27ae60; color: white; padding: 6px 16px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; margin-bottom: 1.2rem; }
+    p { margin: 0.6rem 0; font-size: 1rem; color: #555; }
+    code { background: #FBF8EB; padding: 3px 8px; border-radius: 6px; color: #8B5324; font-family: monospace; font-size: 0.9rem; border: 1px solid #E5DEC9; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="status">🟢 ONLINE</div>
+    <h1>🌽 The Corn API Server</h1>
+    <p>Backend API server is live & connected to MongoDB Atlas.</p>
+    <p>Frontend Application: <code>https://the-corn-mu.vercel.app</code></p>
+  </div>
+</body>
+</html>`);
 });
 
 app.get('/api', (req, res) => {
   res.json({ status: 'online', message: 'The Corn API Service' });
 });
 
-// Favicon & Browser Meta Handlers (eliminates browser console 404 errors)
-app.get(['/favicon.ico', '/favicon.png', '/apple-touch-icon*.png'], (req, res) => {
+// Explicit Favicon & Browser Asset Handlers
+const sendSvgFavicon = (req, res) => {
   res.setHeader('Content-Type', 'image/svg+xml');
   res.setHeader('Cache-Control', 'public, max-age=86400');
   res.send(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌽</text></svg>`);
-});
+};
 
-app.get(['/robots.txt', '/manifest.json', '/site.webmanifest'], (req, res) => {
-  res.status(204).end();
-});
+app.get('/favicon.ico', sendSvgFavicon);
+app.get('/favicon.png', sendSvgFavicon);
+app.get('/apple-touch-icon.png', sendSvgFavicon);
+app.get('/apple-touch-icon-precomposed.png', sendSvgFavicon);
+
+app.get('/robots.txt', (req, res) => res.type('text/plain').send('User-agent: *\nDisallow:'));
+app.get(['/manifest.json', '/site.webmanifest'], (req, res) => res.json({ name: 'The Corn API' }));
 
 // ==========================================
 // MONGODB CONNECTION
