@@ -64,6 +64,9 @@ app.get('/api', (req, res) => {
   res.json({ status: 'online', message: 'The Corn API Service' });
 });
 
+// Favicon handler (eliminates browser console 404 favicon error)
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
 // ==========================================
 // MONGODB CONNECTION
 // ==========================================
