@@ -20,9 +20,9 @@ const PORT = process.env.PORT || 5001;
 
 // Cloudinary Configuration
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'ucjbgbrn',
+  api_key: process.env.CLOUDINARY_API_KEY || '952679157789617',
+  api_secret: process.env.CLOUDINARY_API_SECRET || 'Tqtys3xPady4g3mYRpO0rGrFTpc',
 });
 
 // Multer storage for media uploads (Admin 1 GB limit, Users 500 MB limit)
@@ -467,34 +467,32 @@ app.post('/api/upload', upload.single('media'), async (req, res) => {
     }
 
     try {
-      // Primary: Try Cloudinary Upload
-      const result = await uploadStreamToCloudinary(req.file.path, options);
+      let result;
+      if (isVideo) {
+        result = await cloudinary.uploader.upload(req.file.path, {
+          resource_type: 'video',
+          folder: 'thecorn',
+          chunk_size: 6000000
+        });
+      } else {
+        result = await uploadStreamToCloudinary(req.file.path, options);
+      }
       fs.unlink(req.file.path, () => {});
 
       if (result && result.secure_url) {
+        console.log(`✅ Media uploaded successfully to Cloudinary: ${result.secure_url}`);
         return res.json({ url: result.secure_url, filename: result.public_id });
       }
+      throw new Error('Cloudinary did not return a valid secure_url');
     } catch (cloudinaryErr) {
-      console.warn('⚠️ Cloudinary upload notice (using local storage fallback):', cloudinaryErr.message || cloudinaryErr);
+      if (req.file && fs.existsSync(req.file.path)) fs.unlink(req.file.path, () => {});
+      console.error('❌ Cloudinary upload error:', cloudinaryErr.message || cloudinaryErr);
+      return res.status(500).json({ error: 'Cloudinary upload failed: ' + (cloudinaryErr.message || 'Error') });
     }
-
-    // Fallback: Store locally in /uploads/
-    const ext = path.extname(req.file.originalname) || (isVideo ? '.mp4' : '.jpg');
-    const localFilename = `media_${Date.now()}_${Math.random().toString(36).substr(2, 6)}${ext}`;
-    const localPath = path.join(uploadsDir, localFilename);
-
-    fs.copyFileSync(req.file.path, localPath);
-    fs.unlink(req.file.path, () => {});
-
-    const host = process.env.RENDER_EXTERNAL_URL || 'http://localhost:5001';
-    const localUrl = `${host}/uploads/${localFilename}`;
-    console.log(`✅ Media uploaded successfully via local storage: ${localUrl}`);
-    return res.json({ url: localUrl, filename: localFilename });
-
   } catch (err) {
     console.error('Upload error:', err);
-    if (req.file) fs.unlink(req.file.path, () => {});
-    res.status(500).json({ error: 'Upload failed: ' + (err.message || 'Server error') });
+    if (req.file && fs.existsSync(req.file.path)) fs.unlink(req.file.path, () => {});
+    return res.status(500).json({ error: 'Upload error: ' + (err.message || 'Server error') });
   }
 });
 
@@ -890,5 +888,6 @@ app.get('*', (req, res) => {
 // ==========================================
 
 app.listen(PORT, () => {
-  console.log(`🌽 The Corn Backend running on http://localhost:${PORT}`);
+  const hostUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+  console.log(`🌽 The Corn Backend running on ${hostUrl}`);
 });
