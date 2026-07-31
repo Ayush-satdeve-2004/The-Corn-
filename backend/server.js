@@ -18,6 +18,19 @@ const FriendRequest = require('./models/FriendRequest');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+// Cloudinary Configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Multer storage for media uploads (Admin 1 GB limit, Users 500 MB limit)
+const upload = multer({
+  dest: path.join(os.tmpdir(), 'thecorn-uploads'),
+  limits: { fileSize: 1024 * 1024 * 1024 }, // 1 GB max
+});
+
 // Middleware
 app.use(compression()); // Gzip/Brotli payload compression for ultra-low data usage
 app.use(cors());
