@@ -1,0 +1,34 @@
+.watermark-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 100;
+}
+
+.watermark-text {
+  position: absolute;
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  opacity: 0.4;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  animation: float 15s infinite alternate ease-in-out;
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.7),
+    0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes float {
+  0% {
+    transform: translate(0, 0) rotate(var(--rotation, 0deg));
+  }
+  100% {
+    transform: translate(12px, -12px) rotate(calc(var(--rotation, 0deg) + 4deg));
+  }
+}

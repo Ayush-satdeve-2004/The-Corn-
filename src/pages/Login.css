@@ -1,0 +1,165 @@
+/* ========================================
+   Login Page
+   ======================================== */
+
+.login-bg {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: var(--space-lg);
+}
+
+.login-blob {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(60px);
+  opacity: 0.3;
+}
+.blob-1 {
+  width: 350px; height: 350px;
+  background: var(--cinnamon);
+  top: -100px; right: -80px;
+}
+.blob-2 {
+  width: 300px; height: 300px;
+  background: var(--sage);
+  bottom: -80px; left: -60px;
+}
+
+.login-card {
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  padding: var(--space-2xl) var(--space-xl);
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  z-index: 1;
+}
+
+.login-logo-wrap {
+  text-align: center;
+  margin-bottom: var(--space-xl);
+}
+.login-corn-emoji { font-size: 3.5rem; display: block; margin-bottom: var(--space-sm); }
+.login-title {
+  font-size: var(--text-3xl);
+  font-weight: 800;
+  color: var(--chocolate);
+  margin: 0 0 var(--space-xs);
+  letter-spacing: -0.5px;
+}
+.login-sub { color: var(--sage-dark); font-size: var(--text-sm); margin: 0; }
+
+.login-form { display: flex; flex-direction: column; gap: var(--space-md); }
+
+.form-group { display: flex; flex-direction: column; gap: var(--space-xs); }
+.form-group label { font-size: var(--text-sm); font-weight: 600; color: var(--chocolate); }
+
+.input-icon-wrap { position: relative; }
+.input-icon {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--sage-dark); pointer-events: none;
+  width: 18px;
+  height: 18px;
+}
+.input-icon-wrap .input-field { padding-left: 40px !important; }
+
+.eye-toggle {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer;
+  color: var(--sage-dark); padding: 0; display: flex;
+  transition: color var(--transition-fast);
+}
+.eye-toggle:hover { color: var(--cinnamon); }
+
+.login-error {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: var(--error);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.login-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.forgot-link {
+  font-size: var(--text-sm);
+  color: var(--cinnamon);
+  text-decoration: none;
+  font-weight: 500;
+}
+.forgot-link:hover { text-decoration: underline; }
+
+.forgot-link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--cinnamon);
+  font-weight: 500;
+  cursor: pointer;
+}
+.forgot-link-btn:hover { text-decoration: underline; }
+
+.login-btn { width: 100%; padding: var(--space-md); font-size: var(--text-md); }
+
+.demo-hint {
+  background: var(--cream);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  text-align: center;
+}
+.demo-hint p { font-size: var(--text-xs); color: var(--sage-dark); margin: 0; }
+.demo-hint code {
+  background: var(--cream-dark);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  color: var(--chocolate);
+}
+
+.login-success {
+  text-align: center;
+  padding: var(--space-xl);
+}
+.success-check {
+  width: 64px; height: 64px;
+  background: var(--success);
+  color: white;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem;
+  margin: 0 auto var(--space-md);
+  animation: scaleIn 0.4s ease-out;
+}
+
+.login-footer {
+  margin-top: var(--space-lg);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--sage-dark);
+}
+.link-cinnamon { color: var(--cinnamon); font-weight: 600; text-decoration: none; }
+.link-cinnamon:hover { text-decoration: underline; }
+
+.spinner-sm {
+  width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: white;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.6s linear infinite;
+}

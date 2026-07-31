@@ -1,0 +1,74 @@
+/* ========================================
+   Bottom Navbar
+   ======================================== */
+
+.bottom-navbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 251, 235, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--cream-dark);
+  z-index: var(--z-dropdown);
+  box-shadow: 0 -4px 20px rgba(54, 25, 13, 0.06);
+}
+
+.nav-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 600px;
+  margin: 0 auto;
+  height: 60px;
+  padding: 0;
+}
+
+.nav-item {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0;
+  color: var(--sage-dark);
+  transition: color var(--transition-fast), transform var(--transition-fast);
+  position: relative;
+  flex: 1;
+}
+
+.nav-item:hover {
+  color: var(--chocolate);
+}
+
+.nav-item.active {
+  color: var(--cinnamon);
+}
+
+.nav-item svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+.icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Friend request badge */
+.nav-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background: var(--error);
+  border-radius: 50%;
+  border: 2px solid var(--cream);
+}
