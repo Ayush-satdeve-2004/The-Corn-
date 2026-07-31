@@ -114,16 +114,6 @@ export default function CreatePost() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  if (published) {
-    return (
-      <div className="create-success">
-        <div className="success-corn">🌽</div>
-        <h2>Posted!</h2>
-        <p>Redirecting to feed…</p>
-      </div>
-    );
-  }
-
   return (
     <div className="create-page">
       <header className="create-header">
@@ -131,18 +121,10 @@ export default function CreatePost() {
         <button
           className="btn-primary publish-btn"
           onClick={handlePublish}
-          disabled={isPublishing}
         >
-          {isPublishing ? <span className="spinner-sm" /> : 'Share'}
+          Share
         </button>
       </header>
-
-      {/* Upload progress bar */}
-      {isPublishing && uploadProgress > 0 && (
-        <div className="upload-progress-bar">
-          <div className="upload-progress-fill" style={{ width: `${uploadProgress}%` }} />
-        </div>
-      )}
 
       {/* Type selector */}
       <div className="post-type-tabs">
