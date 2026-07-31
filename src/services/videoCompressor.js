@@ -1,11 +1,11 @@
 /**
- * Compresses videos exceeding 720p resolution or 15 MB file size
- * Downscales to 720p max (1280x720 or 720x1280) with 2.5 Mbps target bitrate.
+ * High-speed client-side video compressor (720p 8x speed encoding)
+ * Downscales videos exceeding 720p resolution or 50 MB file size
  */
 export const compressVideo = (file, onProgress) => {
   return new Promise((resolve) => {
-    // If file is 15 MB or smaller, upload original directly
-    if (!file || file.size <= 15 * 1024 * 1024) {
+    // If file is 50 MB or smaller, upload directly for instant speed
+    if (!file || file.size <= 50 * 1024 * 1024) {
       if (onProgress) onProgress(100);
       return resolve(file);
     }
@@ -15,6 +15,8 @@ export const compressVideo = (file, onProgress) => {
     video.src = URL.createObjectURL(file);
     video.muted = true;
     video.playsInline = true;
+
+    let isStarted = false;
 
     video.onerror = () => {
       URL.revokeObjectURL(video.src);
@@ -63,12 +65,12 @@ export const compressVideo = (file, onProgress) => {
         if (MediaRecorder.isTypeSupported('video/mp4')) {
           mimeType = 'video/mp4';
         } else {
-          mimeType = ''; // Let browser pick default
+          mimeType = '';
         }
       }
 
       const recorderOptions = {
-        videoBitsPerSecond: 2500000 // 2.5 Mbps 720p quality
+        videoBitsPerSecond: 2000000 // 2.0 Mbps 720p quality
       };
       if (mimeType) recorderOptions.mimeType = mimeType;
 
@@ -77,7 +79,7 @@ export const compressVideo = (file, onProgress) => {
         mediaRecorder = new MediaRecorder(stream, recorderOptions);
       } catch {
         URL.revokeObjectURL(video.src);
-        return resolve(file); // Fallback to original file if MediaRecorder fails
+        return resolve(file); // Fallback to original file
       }
 
       const chunks = [];
@@ -97,8 +99,8 @@ export const compressVideo = (file, onProgress) => {
         resolve(compressedFile);
       };
 
-      // Rapid encoding at 3.0x speed
-      video.playbackRate = 3.0;
+      // High-speed 8.0x playback rate for fast encoding
+      video.playbackRate = 8.0;
 
       let animId;
       const renderFrame = () => {
@@ -113,13 +115,20 @@ export const compressVideo = (file, onProgress) => {
       };
 
       video.onplay = () => {
-        mediaRecorder.start();
-        renderFrame();
+        if (!isStarted && mediaRecorder.state === 'inactive') {
+          isStarted = true;
+          try {
+            mediaRecorder.start(200);
+          } catch (e) {
+            console.warn('MediaRecorder start notice:', e);
+          }
+          renderFrame();
+        }
       };
 
       video.onended = () => {
         cancelAnimationFrame(animId);
-        if (mediaRecorder.state !== 'inactive') {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
           mediaRecorder.stop();
         }
       };
