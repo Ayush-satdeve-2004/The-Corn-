@@ -207,8 +207,21 @@ export default function Profile() {
     }
   };
 
+  const validatePwdRules = (pwd) => {
+    return {
+      length: pwd.length >= 9,
+      letters: (pwd.match(/[a-zA-Z]/g) || []).length >= 5,
+      numbers: (pwd.match(/[0-9]/g) || []).length >= 3,
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(pwd)
+    };
+  };
+
   const handleResetPassword = async () => {
-    if (newPassword.length < 6) { showToast('Password must be at least 6 characters', 'error'); return; }
+    const rules = validatePwdRules(newPassword);
+    if (!Object.values(rules).every(Boolean)) {
+      showToast('Please satisfy all password security requirements.', 'error');
+      return;
+    }
     if (newPassword !== confirmPassword) { showToast('Passwords do not match', 'error'); return; }
     setResetLoading(true);
     try {
@@ -562,11 +575,24 @@ export default function Profile() {
                 <p className="modal-desc">Enter your new password</p>
                 <input className="input-field" type="password" placeholder="New password" value={newPassword}
                   onChange={e => setNewPassword(e.target.value)} />
+                {(() => {
+                  const r = validatePwdRules(newPassword);
+                  return (
+                    <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#666' }}>
+                      <div style={{ color: r.length ? '#27ae60' : 'inherit' }}>{r.length ? '✓' : 'x'} Minimum 9 characters</div>
+                      <div style={{ color: r.letters ? '#27ae60' : 'inherit' }}>{r.letters ? '✓' : 'x'} At least 5 letters</div>
+                      <div style={{ color: r.numbers ? '#27ae60' : 'inherit' }}>{r.numbers ? '✓' : 'x'} At least 3 numbers</div>
+                      <div style={{ color: r.special ? '#27ae60' : 'inherit' }}>{r.special ? '✓' : 'x'} At least 1 special character</div>
+                    </div>
+                  );
+                })()}
                 <input className="input-field" type="password" placeholder="Confirm password" value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)} style={{ marginTop: '0.5rem' }} />
                 <div className="modal-actions">
                   <button className="btn-secondary" onClick={() => setResetOpen(false)}>Cancel</button>
-                  <button className="btn-primary" onClick={handleResetPassword}>Reset</button>
+                  <button className="btn-primary" onClick={handleResetPassword} disabled={resetLoading}>
+                    {resetLoading ? 'Resetting…' : 'Reset'}
+                  </button>
                 </div>
               </>
             )}

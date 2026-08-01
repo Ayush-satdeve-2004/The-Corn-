@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { registerUser, sendEmailOTP, verifyEmailOTP } from '../services/mockBackend';
+import { registerUser, sendEmailOTP, verifyEmailOTP, checkExistingUser } from '../services/api';
 import './Register.css';
 
 export default function Register() {
@@ -94,7 +94,7 @@ export default function Register() {
   };
 
   // Step 1: Submit Details & Proceed to Email Verification
-  const handleStep1Submit = (e) => {
+  const handleStep1Submit = async (e) => {
     e.preventDefault();
     const newErrors = {};
     if (!formData.fullName.trim()) newErrors.fullName = 'Full Name is required';
@@ -110,8 +110,24 @@ export default function Register() {
       setErrors(newErrors);
       return;
     }
-    
-    setStep(2);
+
+    setLoading(true);
+    try {
+      const checkRes = await checkExistingUser(formData.email, formData.mobile);
+      if (checkRes && checkRes.exists) {
+        const errMsg = checkRes.message || 'Email or mobile number already registered.';
+        showToast(errMsg);
+        setErrors({ submit: errMsg });
+        setLoading(false);
+        return;
+      }
+      setErrors({});
+      setStep(2);
+    } catch (err) {
+      showToast('Error checking user details');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Timer for Email OTP

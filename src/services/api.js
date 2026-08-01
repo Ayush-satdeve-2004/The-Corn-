@@ -39,6 +39,13 @@ export const registerUser = async (formData) => {
   });
 };
 
+export const checkExistingUser = async (email, mobile) => {
+  return request('/auth/check-existing', {
+    method: 'POST',
+    body: JSON.stringify({ email, mobile }),
+  });
+};
+
 
 
 

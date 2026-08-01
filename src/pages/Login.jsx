@@ -118,12 +118,22 @@ export default function Login() {
     }
   };
 
+  const validatePwdRules = (pwd) => {
+    return {
+      length: pwd.length >= 9,
+      letters: (pwd.match(/[a-zA-Z]/g) || []).length >= 5,
+      numbers: (pwd.match(/[0-9]/g) || []).length >= 3,
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(pwd)
+    };
+  };
+
   // Step 3: Reset password
   const handleForgotReset = async (e) => {
     e.preventDefault();
     setForgotError('');
-    if (newPassword.length < 6) {
-      setForgotError('Password must be at least 6 characters.');
+    const rules = validatePwdRules(newPassword);
+    if (!Object.values(rules).every(Boolean)) {
+      setForgotError('Please satisfy all password security requirements.');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -324,12 +334,23 @@ export default function Login() {
                   <input
                     type="password"
                     className="input-field"
-                    placeholder="New password (min 6 chars)"
+                    placeholder="New password"
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}
                     disabled={forgotLoading}
                     autoFocus
                   />
+                  {(() => {
+                    const r = validatePwdRules(newPassword);
+                    return (
+                      <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#666' }}>
+                        <div style={{ color: r.length ? '#27ae60' : 'inherit' }}>{r.length ? '✓' : 'x'} Minimum 9 characters</div>
+                        <div style={{ color: r.letters ? '#27ae60' : 'inherit' }}>{r.letters ? '✓' : 'x'} At least 5 letters</div>
+                        <div style={{ color: r.numbers ? '#27ae60' : 'inherit' }}>{r.numbers ? '✓' : 'x'} At least 3 numbers</div>
+                        <div style={{ color: r.special ? '#27ae60' : 'inherit' }}>{r.special ? '✓' : 'x'} At least 1 special character</div>
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="form-group" style={{ marginTop: '0.5rem' }}>
                   <input

@@ -155,25 +155,59 @@ function validateMobileNumber(mobile) {
   return true;
 }
 
+// Check if Email or Mobile is already registered
+app.post('/api/auth/check-existing', async (req, res) => {
+  try {
+    const { email, mobile } = req.body;
+    const cleanEmail = email ? email.trim().toLowerCase() : '';
+    const cleanMobile = mobile ? mobile.trim() : '';
+
+    if (cleanEmail) {
+      const existingEmail = await User.findOne({ email: cleanEmail });
+      if (existingEmail) {
+        return res.json({ exists: true, message: 'Email address already registered. Please log in.' });
+      }
+    }
+
+    if (cleanMobile) {
+      const existingMobile = await User.findOne({ mobile: cleanMobile });
+      if (existingMobile) {
+        return res.json({ exists: true, message: 'Mobile number already registered. Please log in.' });
+      }
+    }
+
+    res.json({ exists: false });
+  } catch (err) {
+    res.status(500).json({ exists: false });
+  }
+});
+
 // Register User
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { fullName, email, mobile, password } = req.body;
+    const cleanEmail = email ? email.trim().toLowerCase() : '';
+    const cleanMobile = mobile ? mobile.trim() : '';
 
-    if (!validateMobileNumber(mobile)) {
+    if (!validateMobileNumber(cleanMobile)) {
       return res.status(400).json({ success: false, message: 'enter valid number' });
     }
 
-    const existing = await User.findOne({ $or: [{ email: email.toLowerCase() }, { mobile }] });
-    if (existing) {
-      return res.status(400).json({ success: false, message: 'Email or mobile already registered' });
+    const existingEmail = await User.findOne({ email: cleanEmail });
+    if (existingEmail) {
+      return res.status(400).json({ success: false, message: 'Email address already registered. Please log in.' });
+    }
+
+    const existingMobile = await User.findOne({ mobile: cleanMobile });
+    if (existingMobile) {
+      return res.status(400).json({ success: false, message: 'Mobile number already registered. Please log in.' });
     }
 
     const newUser = await User.create({
       fullName,
       username: 'user_' + Math.floor(Math.random() * 100000),
-      email: email.toLowerCase(),
-      mobile,
+      email: cleanEmail,
+      mobile: cleanMobile,
       password: Buffer.from(password).toString('base64'),
       status: 'PENDING_APPROVAL',
       role: 'USER',
