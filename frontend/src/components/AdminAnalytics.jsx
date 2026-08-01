@@ -13,7 +13,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
   const regularUserPosts = posts.filter(p => !adminUserIds.has(p.userId));
   const regularUsers = users.filter(u => u.role !== 'ADMIN' && u.username !== 'ayush');
 
-  // 3. Strictly compute REAL database metrics (No fake/simulated numbers)
+  // 3. Strictly compute REAL database metrics
   const totalViews = regularUserPosts.reduce((sum, p) => sum + (p.viewsCount || 0), 0);
   const totalWatchSeconds = regularUserPosts.reduce((sum, p) => sum + (p.watchTimeSeconds || 0), 0);
   const totalLikes = regularUserPosts.reduce((sum, p) => sum + (p.likes?.length || 0), 0);
@@ -62,7 +62,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
       {/* Header */}
       <div className="analytics-header">
         <div>
-          <h2>📊 Regular User Behavioral Analytics & Data</h2>
+          <h2>Regular User Behavioral Analytics & Data</h2>
           <p className="analytics-subtitle">Strictly real user engagement & watch time (Admin data excluded)</p>
         </div>
         <div className="timeframe-toggle">
@@ -81,7 +81,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
       {/* Real Metric Cards Row */}
       <div className="analytics-metrics-grid">
         <div className="metric-card">
-          <div className="metric-icon" style={{ backgroundColor: 'rgba(139, 83, 36, 0.15)', color: '#8B5324' }}>👁️</div>
+          <div className="metric-icon" style={{ backgroundColor: 'rgba(139, 83, 36, 0.15)', color: '#8B5324' }}>V</div>
           <div className="metric-info">
             <span className="metric-label">Regular User Views</span>
             <span className="metric-value">{totalViews.toLocaleString()}</span>
@@ -90,7 +90,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
         </div>
 
         <div className="metric-card">
-          <div className="metric-icon" style={{ backgroundColor: 'rgba(76, 175, 80, 0.15)', color: '#4CAF50' }}>⏱️</div>
+          <div className="metric-icon" style={{ backgroundColor: 'rgba(76, 175, 80, 0.15)', color: '#4CAF50' }}>T</div>
           <div className="metric-info">
             <span className="metric-label">Total User Watch Time</span>
             <span className="metric-value">{formatDuration(totalWatchSeconds)}</span>
@@ -99,7 +99,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
         </div>
 
         <div className="metric-card">
-          <div className="metric-icon" style={{ backgroundColor: 'rgba(33, 150, 243, 0.15)', color: '#2196F3' }}>⏳</div>
+          <div className="metric-icon" style={{ backgroundColor: 'rgba(33, 150, 243, 0.15)', color: '#2196F3' }}>D</div>
           <div className="metric-info">
             <span className="metric-label">Avg. Dwell Time / Post</span>
             <span className="metric-value">{avgDwellTimeSec}s</span>
@@ -108,7 +108,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
         </div>
 
         <div className="metric-card">
-          <div className="metric-icon" style={{ backgroundColor: 'rgba(156, 39, 176, 0.15)', color: '#9C27B0' }}>💬</div>
+          <div className="metric-icon" style={{ backgroundColor: 'rgba(156, 39, 176, 0.15)', color: '#9C27B0' }}>I</div>
           <div className="metric-info">
             <span className="metric-label">User Interactions</span>
             <span className="metric-value">{totalLikes + totalComments}</span>
@@ -122,7 +122,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
         {/* Bar Chart */}
         <div className="chart-card">
           <div className="chart-card-header">
-            <h3>📈 Most Viewed User Content</h3>
+            <h3>Most Viewed User Content</h3>
             <span className="chart-tag">Real User Posts ({regularUserPosts.length})</span>
           </div>
           <div className="bar-chart-container">
@@ -133,7 +133,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
                   <div key={post.id || idx} className="bar-item">
                     <div className="bar-label-group">
                       <span className="bar-post-title">
-                        {post.type === 'video' ? '🎬' : post.type === 'photo' ? '🖼️' : '📝'} {post.content?.slice(0, 24) || `Post #${idx + 1}`}
+                        {post.type === 'video' ? '[Video]' : post.type === 'photo' ? '[Photo]' : '[Text]'} {post.content?.slice(0, 24) || `Post #${idx + 1}`}
                       </span>
                       <span className="bar-post-stats">
                         {post.realViews} views · {formatDuration(post.realWatchSec)}
@@ -155,7 +155,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
               })
             ) : (
               <div style={{ textAlign: 'center', padding: '30px 10px', opacity: 0.6 }}>
-                📭 No regular user posts recorded yet. Analytics will populate as regular users post content.
+                No regular user posts recorded yet. Analytics will populate as regular users post content.
               </div>
             )}
           </div>
@@ -164,7 +164,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
         {/* Line Graph: Watch Duration Trends */}
         <div className="chart-card">
           <div className="chart-card-header">
-            <h3>📈 Real-Time User Activity Trend</h3>
+            <h3>Real-Time User Activity Trend</h3>
             <span className="chart-tag">Verified Trend</span>
           </div>
           <div className="line-chart-container">
@@ -219,7 +219,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
         {/* Pie Chart */}
         <div className="chart-card">
           <div className="chart-card-header">
-            <h3>🥧 Content Type Breakdown</h3>
+            <h3>Content Type Breakdown</h3>
           </div>
           <div className="pie-container">
             {totalTypeCount > 0 ? (
@@ -244,7 +244,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
         {/* Sentiment Distribution Plot */}
         <div className="chart-card">
           <div className="chart-card-header">
-            <h3>💖 User Comment Sentiment</h3>
+            <h3>User Comment Sentiment</h3>
           </div>
           <div className="sentiment-container">
             <div className="sentiment-bar-group">
@@ -282,7 +282,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
         {/* Social Network Graph */}
         <div className="chart-card">
           <div className="chart-card-header">
-            <h3>🕸️ User Interaction Network</h3>
+            <h3>User Interaction Network</h3>
           </div>
           <div className="network-graph-container">
             <svg viewBox="0 0 240 180" className="network-svg">
@@ -315,7 +315,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
               </g>
             </svg>
             <div className="network-caption">
-              <span>🟢 Regular Users ({regularUsers.length})</span> · Admin Excluded
+              <span>Regular Users ({regularUsers.length})</span> · Admin Excluded
             </div>
           </div>
         </div>
@@ -324,7 +324,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
       {/* Detailed Post Watch Time & Engagement Table */}
       <div className="chart-card full-width-card">
         <div className="chart-card-header">
-          <h3>📋 Regular User Post Metrics</h3>
+          <h3>Regular User Post Metrics</h3>
         </div>
         <div className="table-responsive">
           <table className="analytics-table">
@@ -349,7 +349,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
                     <tr key={post.id}>
                       <td>
                         <span className={`type-badge ${post.type || 'text'}`}>
-                          {post.type === 'video' ? '🎬 Video' : post.type === 'photo' ? '🖼️ Photo' : '📝 Text'}
+                          {post.type === 'video' ? 'Video' : post.type === 'photo' ? 'Photo' : 'Text'}
                         </span>
                       </td>
                       <td><strong>{post.authorName || 'User'}</strong></td>
@@ -357,7 +357,7 @@ export default function AdminAnalytics({ posts = [], users = [] }) {
                       <td>{views}</td>
                       <td>{formatDuration(watchSec)}</td>
                       <td>{avgDwell}s</td>
-                      <td>❤️ {post.likes?.length || 0}</td>
+                      <td>Likes: {post.likes?.length || 0}</td>
                     </tr>
                   );
                 })

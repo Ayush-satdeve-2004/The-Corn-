@@ -231,10 +231,9 @@ async function sendBrevoOtpEmail(toEmail, otp) {
     body: JSON.stringify({
       sender: { name: 'The Corn', email: senderEmail },
       to: [{ email: toEmail }],
-      subject: `🌽 ${otp} is your verification code for The Corn`,
+      subject: `${otp} is your verification code for The Corn`,
       htmlContent: `
         <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #FBF8EB; padding: 32px 20px; border-radius: 16px; max-width: 480px; margin: 0 auto; border: 1px solid #E6DEC8; box-shadow: 0 4px 12px rgba(54, 25, 13, 0.05); text-align: center;">
-          <div style="font-size: 42px; margin-bottom: 8px;">🌽</div>
           <h2 style="color: #36190D; font-size: 22px; font-weight: 700; margin: 0 0 8px 0;">The Corn Security</h2>
           <p style="color: #665243; font-size: 14px; line-height: 1.5; margin: 0 0 24px 0;">Use the 6-digit verification code below to complete your password reset request.</p>
           
@@ -242,7 +241,7 @@ async function sendBrevoOtpEmail(toEmail, otp) {
             ${otp}
           </div>
 
-          <p style="color: #8B5324; font-size: 13px; font-weight: 600; margin: 0 0 6px 0;">⏱️ This code expires in 5 minutes.</p>
+          <p style="color: #8B5324; font-size: 13px; font-weight: 600; margin: 0 0 6px 0;">This code expires in 5 minutes.</p>
           <p style="color: #998877; font-size: 12px; margin-top: 24px; border-top: 1px dashed #D6CCB4; padding-top: 16px; line-height: 1.4;">
             If you did not request this email, no action is needed. Your account remains safe.
           </p>
@@ -253,12 +252,12 @@ async function sendBrevoOtpEmail(toEmail, otp) {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    console.error('❌ Brevo Email API error:', errorData);
+    console.error('Brevo Email API error:', errorData);
     throw new Error(errorData.message || 'Failed to send email via Brevo');
   }
 
   const data = await response.json();
-  console.log(`✉️ Brevo OTP email sent to ${toEmail} (MessageID: ${data.messageId})`);
+  console.log(`Brevo OTP email sent to ${toEmail} (MessageID: ${data.messageId})`);
   return true;
 }
 

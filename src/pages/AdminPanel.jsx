@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { getPendingAccounts, getActiveUsers, approveUser, rejectUser, getFeed, deleteUserByAdmin, deletePost } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import {
-  getPendingAccounts, getActiveUsers, approveUser, rejectUser,
-  deleteUserByAdmin, getFeed, deletePost, getUserById
-} from '../services/api';
 import Toast from '../components/Toast';
 import { useNavigate } from 'react-router-dom';
 import './AdminPanel.css';
@@ -84,35 +81,29 @@ export default function AdminPanel() {
     if (!window.confirm(`Are you sure you want to permanently delete ${name}'s account and all their posts?`)) {
       return;
     }
-
     setDeletingId(id);
     try {
       const res = await deleteUserByAdmin(id);
       if (res && res.success) {
         showToast(`User ${name} deleted`, 'success');
         loadData();
-      } else {
-        showToast('Failed to delete user', 'error');
       }
     } catch (err) {
-      showToast('Error deleting user', 'error');
+      showToast('Failed to delete user', 'error');
     } finally {
       setDeletingId(null);
     }
   };
 
-  const handleDeletePost = async (postId) => {
-    if (!window.confirm('Are you sure you want to delete this user post as Admin?')) {
-      return;
-    }
-
+  const handleDeletePostAdmin = async (postId) => {
+    if (!window.confirm('Are you sure you want to delete this post?')) return;
     setDeletingPostId(postId);
     try {
-      await deletePost(postId);
-      showToast('Post removed successfully!', 'success');
-      loadData();
+      await deletePost(postId, user.id);
+      showToast('Post deleted successfully', 'success');
+      setAllPosts(prev => prev.filter(p => p.id !== postId));
     } catch (err) {
-      showToast('Error deleting post', 'error');
+      showToast('Failed to delete post', 'error');
     } finally {
       setDeletingPostId(null);
     }
@@ -127,7 +118,7 @@ export default function AdminPanel() {
     <div className="admin-container">
       <header className="admin-header">
         <button className="back-btn" onClick={() => navigate('/profile')}>
-          ← Back
+          Back
         </button>
         <h1>Admin Control Panel</h1>
       </header>
@@ -138,7 +129,7 @@ export default function AdminPanel() {
           className={`admin-tab ${activeTab === 'analytics' ? 'active' : ''}`}
           onClick={() => setActiveTab('analytics')}
         >
-          📊 Analytics & Graphs
+          Analytics & Graphs
         </button>
         <button
           className={`admin-tab ${activeTab === 'pending' ? 'active' : ''}`}
@@ -169,7 +160,6 @@ export default function AdminPanel() {
           /* Pending Users List */
           pendingUsers.length === 0 ? (
             <div className="admin-empty">
-              <div style={{ fontSize: '3rem' }}>🎉</div>
               <h3>No pending approvals</h3>
               <p>All user registration requests have been processed.</p>
             </div>
@@ -183,16 +173,16 @@ export default function AdminPanel() {
                     </div>
                     <div>
                       <h4 className="admin-user-name">{u.fullName}</h4>
-                      <p className="admin-user-detail">📧 {u.email}</p>
-                      <p className="admin-user-detail">📱 {u.mobile}</p>
+                      <p className="admin-user-detail">Email: {u.email}</p>
+                      <p className="admin-user-detail">Mobile: {u.mobile}</p>
                     </div>
                   </div>
                   <div className="admin-actions">
                     <button className="btn-approve" onClick={() => handleApprove(u.id)}>
-                      Approve ✓
+                      Approve
                     </button>
                     <button className="btn-reject" onClick={() => handleReject(u.id)}>
-                      Reject ✗
+                      Reject
                     </button>
                   </div>
                 </div>
@@ -203,7 +193,6 @@ export default function AdminPanel() {
           /* Active Users List */
           activeUsers.length === 0 ? (
             <div className="admin-empty">
-              <div style={{ fontSize: '3rem' }}>👥</div>
               <h3>No active users found</h3>
               <p>Approved active users will appear here.</p>
             </div>
@@ -219,9 +208,9 @@ export default function AdminPanel() {
                       <h4 className="admin-user-name">
                         {u.fullName} {u.role === 'ADMIN' && <span className="admin-badge">ADMIN</span>}
                       </h4>
-                      <p className="admin-user-detail">👤 @{u.username}</p>
-                      <p className="admin-user-detail">📧 {u.email}</p>
-                      <p className="admin-user-detail">📱 {u.mobile}</p>
+                      <p className="admin-user-detail">@{u.username}</p>
+                      <p className="admin-user-detail">Email: {u.email}</p>
+                      <p className="admin-user-detail">Mobile: {u.mobile}</p>
                     </div>
                   </div>
                   <div className="admin-actions">
@@ -232,7 +221,7 @@ export default function AdminPanel() {
                         disabled={deletingId === u.id}
                         style={{ backgroundColor: '#c0392b', color: '#fff' }}
                       >
-                        {deletingId === u.id ? 'Deleting...' : 'Delete Account 🗑️'}
+                        {deletingId === u.id ? 'Deleting...' : 'Delete Account'}
                       </button>
                     ) : (
                       <span className="current-user-badge">You (Admin)</span>
@@ -257,25 +246,24 @@ export default function AdminPanel() {
                 className={`filter-chip ${postFilter === 'photo' ? 'active' : ''}`}
                 onClick={() => setPostFilter('photo')}
               >
-                Photos 📷 ({allPosts.filter(p => p.type === 'photo').length})
+                Photos ({allPosts.filter(p => p.type === 'photo').length})
               </button>
               <button
                 className={`filter-chip ${postFilter === 'video' ? 'active' : ''}`}
                 onClick={() => setPostFilter('video')}
               >
-                Videos 🎥 ({allPosts.filter(p => p.type === 'video').length})
+                Videos ({allPosts.filter(p => p.type === 'video').length})
               </button>
               <button
                 className={`filter-chip ${postFilter === 'text' ? 'active' : ''}`}
                 onClick={() => setPostFilter('text')}
               >
-                Text 📝 ({allPosts.filter(p => p.type === 'text').length})
+                Text ({allPosts.filter(p => p.type === 'text').length})
               </button>
             </div>
 
             {filteredPosts.length === 0 ? (
               <div className="admin-empty">
-                <div style={{ fontSize: '3rem' }}>🖼️</div>
                 <h3>No posts found</h3>
                 <p>No user posts matching the selected filter.</p>
               </div>
@@ -312,18 +300,18 @@ export default function AdminPanel() {
                       )}
 
                       <p className="admin-post-meta">
-                        ❤️ {p.likes?.length || 0} Likes · 💬 {p.comments?.length || 0} Comments
+                        {p.likes?.length || 0} Likes · {p.comments?.length || 0} Comments
                       </p>
                     </div>
 
                     <div className="admin-post-actions">
                       <button
                         className="btn-reject"
-                        onClick={() => handleDeletePost(p.id)}
+                        onClick={() => handleDeletePostAdmin(p.id)}
                         disabled={deletingPostId === p.id}
                         style={{ backgroundColor: '#c0392b', color: '#ffffff' }}
                       >
-                        {deletingPostId === p.id ? 'Deleting...' : 'Delete Post 🗑️'}
+                        {deletingPostId === p.id ? 'Deleting...' : 'Delete Post'}
                       </button>
                     </div>
                   </div>

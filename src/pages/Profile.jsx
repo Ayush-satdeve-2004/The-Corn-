@@ -190,13 +190,14 @@ export default function Profile() {
   if (!user) return null;
 
   const avatarSrc = user.avatar ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || 'U')}&background=8B5324&color=fff&size=150`;
+  const avatarSrc = user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || 'U')}&background=8B5324&color=fff&size=150`;
+
+  const toggleShowAll = (tab) => setShowAllMap(prev => ({ ...prev, [tab]: !prev[tab] }));
 
   const renderGrid = (items, tabName) => {
     if (items.length === 0) {
       return (
         <div className="empty-state" style={{ padding: '2rem' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📭</div>
           <p>Nothing here yet</p>
         </div>
       );
@@ -217,27 +218,19 @@ export default function Profile() {
               {post.type === 'video' && (
                 <div className="video-thumb-wrap">
                   <video src={post.mediaUrl} />
-                  <span className="play-overlay">▶</span>
+                  <div className="video-icon">▶</div>
                 </div>
               )}
               {post.type === 'text' && (
-                <div className="text-thumb">
-                  <p>{(post.content || '').slice(0, 60)}{post.content?.length > 60 ? '…' : ''}</p>
-                </div>
+                <div className="text-thumb">{post.content}</div>
               )}
             </div>
           ))}
         </div>
-
         {hasMore && (
-          <div className="show-more-wrap">
-            <button
-              className="btn-show-more"
-              onClick={() => setShowAllMap(prev => ({ ...prev, [tabName]: !isExpanded }))}
-            >
-              {isExpanded ? 'Show Less ↑' : `Show More (${items.length - 3} more) ↓`}
-            </button>
-          </div>
+          <button className="view-more-btn" onClick={() => toggleShowAll(tabName)}>
+            {isExpanded ? 'Show Less' : `View All (${items.length})`}
+          </button>
         )}
       </div>
     );
@@ -245,124 +238,122 @@ export default function Profile() {
 
   return (
     <div className="profile-container">
-      {/* Profile Header */}
-      <div className="profile-header">
-        <div className="profile-top-row">
-          <div
-            className="profile-avatar-wrap clickable-avatar"
-            onClick={() => { setEditForm({ fullName: user.fullName, bio: user.bio || '', avatar: user.avatar || '' }); setEditOpen(true); }}
-            title="Click to edit profile picture"
-          >
-            <img
-              src={avatarSrc}
-              alt={user.fullName}
-              className="profile-avatar-img"
-              onError={e => { e.target.src = `https://ui-avatars.com/api/?name=U&background=8B5324&color=fff&size=150`; }}
-            />
-            <div className="avatar-camera-badge">📷</div>
-          </div>
-          <div className="profile-stats-row">
-            <div className="stat-box">
-              <span className="stat-number">{tabData.posts.length}</span>
-              <span className="stat-label">Posts</span>
-            </div>
-            <div className="stat-box">
-              <span className="stat-number">{friendCount}</span>
-              <span className="stat-label">Friends</span>
-            </div>
-            <div className="stat-box">
-              <span className="stat-number">{tabData.liked.length}</span>
-              <span className="stat-label">Liked</span>
-            </div>
-          </div>
+      <header className="profile-header">
+        <div className="profile-header-title">
+          <h2>{user.fullName || 'User'}</h2>
+          {isAdmin && <span className="admin-badge">ADMIN</span>}
         </div>
+        <button className="icon-btn" onClick={() => setEditOpen(true)} title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="22" height="22">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+        </button>
+      </header>
 
-        <div className="profile-bio-section">
-          <h2 className="profile-fullname">{user.fullName}</h2>
-          <p className="profile-username">@{user.username}</p>
-          {user.bio && <p className="profile-bio">{user.bio}</p>}
-          <button className="btn-secondary edit-profile-btn" onClick={() => { setEditForm({ fullName: user.fullName, bio: user.bio || '' }); setEditOpen(true); }}>
-            Edit Profile
-          </button>
+      <div className="profile-info">
+        <div className="profile-avatar-wrap">
+          <img src={avatarSrc} alt={user.fullName} className="profile-avatar" />
+          {isAdmin && <div className="admin-avatar-crown">Admin</div>}
+        </div>
+        <h3 className="profile-name">{user.fullName}</h3>
+        <p className="profile-handle">@{user.username}</p>
+        {user.bio && <p className="profile-bio">{user.bio}</p>}
+
+        <button className="edit-profile-btn" onClick={() => setEditOpen(true)}>
+          Edit Profile
+        </button>
+
+        <div className="profile-stats">
+          <div className="stat-item">
+            <span className="stat-num">{tabData.posts.length}</span>
+            <span className="stat-label">Posts</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-num">{friendCount}</span>
+            <span className="stat-label">Friends</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-num">{tabData.liked.length}</span>
+            <span className="stat-label">Liked</span>
+          </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="profile-tabs-bar">
-        {['posts', 'liked', 'saved'].map(tab => (
-          <button
-            key={tab}
-            className={`ptab ${activeTab === tab ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab)}
-          >
-            {tab === 'posts' && (
-              <svg viewBox="0 0 24 24" fill={activeTab === tab ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" width="20" height="20">
-                <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
-                <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
-              </svg>
-            )}
-            {tab === 'liked' && (
-              <svg viewBox="0 0 24 24" fill={activeTab === tab ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" width="20" height="20">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-              </svg>
-            )}
-            {tab === 'saved' && (
-              <svg viewBox="0 0 24 24" fill={activeTab === tab ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" width="20" height="20">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-              </svg>
-            )}
-          </button>
-        ))}
+      <div className="profile-tabs">
+        <button
+          className={`tab-btn ${activeTab === 'posts' ? 'active' : ''}`}
+          onClick={() => setActiveTab('posts')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+            <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+          </svg>
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'liked' ? 'active' : ''}`}
+          onClick={() => setActiveTab('liked')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+          </svg>
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'saved' ? 'active' : ''}`}
+          onClick={() => setActiveTab('saved')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+          </svg>
+        </button>
       </div>
 
-      {/* Tab Content */}
-      <div className="profile-tab-content">
+      <div className="tab-content">
         {activeTab === 'posts' && renderGrid(tabData.posts, 'posts')}
         {activeTab === 'liked' && renderGrid(tabData.liked, 'liked')}
         {activeTab === 'saved' && renderGrid(tabData.saved, 'saved')}
       </div>
 
-      {/* Settings Section */}
-      <div className="settings-section">
-        <h3 className="settings-heading">Account</h3>
-        <div className="settings-list">
-          <button className="settings-row" onClick={() => { setResetStep(1); setResetOpen(true); }}>
+      <div className="account-section">
+        <h4 className="account-section-title">ACCOUNT</h4>
+
+        <div className="account-menu">
+          <button className="menu-item" onClick={() => { setResetStep(1); setResetOpen(true); }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
-              <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
             Reset Password
           </button>
+
           {isAdmin && (
-            <button className="settings-row" onClick={() => navigate('/admin')}>
+            <button className="menu-item admin-link" onClick={() => navigate('/admin')}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
               Admin Panel
             </button>
           )}
-          <button className="settings-row" onClick={logout}>
+
+          <button className="menu-item" onClick={logout}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
             </svg>
             Logout
           </button>
-          <button className="settings-row danger" onClick={() => setDeleteConfirm(true)}>
+
+          <button className="menu-item danger" onClick={() => setDeleteConfirm(true)}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
               <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" />
             </svg>
             Delete Account
           </button>
         </div>
-        <p className="app-version">The Corn v1.0.0</p>
       </div>
 
-      {/* Edit Profile Modal */}
       {editOpen && (
         <div className="modal-overlay" onClick={() => setEditOpen(false)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
             <h3>Edit Profile</h3>
-
-            {/* Avatar Upload / Reset Section */}
             <div className="edit-avatar-section">
               <div className="edit-avatar-preview">
                 <img
@@ -373,11 +364,11 @@ export default function Profile() {
               </div>
               <div className="edit-avatar-actions">
                 <button type="button" className="btn-secondary btn-sm" onClick={() => avatarFileRef.current?.click()}>
-                  Upload Photo 📷
+                  Upload Photo
                 </button>
                 {editForm.avatar && (
                   <button type="button" className="btn-danger-outline btn-sm" onClick={() => setEditForm(f => ({ ...f, avatar: '' }))}>
-                    Reset Photo ↺
+                    Reset Photo
                   </button>
                 )}
                 <input
