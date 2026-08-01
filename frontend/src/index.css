@@ -366,37 +366,7 @@ button {
   box-shadow: var(--shadow-md);
 }
 
-/* Toasts */
-.toast-container {
-  position: fixed;
-  bottom: var(--space-xl);
-  right: var(--space-xl);
-  z-index: var(--z-toast);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
 
-.toast {
-  padding: var(--space-md) var(--space-lg);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  color: var(--white);
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-width: 300px;
-  animation: slideInRight var(--transition-normal) forwards;
-}
-
-.toast-success {
-  background-color: var(--success);
-}
-
-.toast-error {
-  background-color: var(--error);
-}
 
 /* Overlays & Modals */
 .overlay {
