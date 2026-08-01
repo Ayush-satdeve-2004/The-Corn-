@@ -5,7 +5,7 @@
 .profile-container {
   background: var(--white);
   min-height: 100vh;
-  padding-bottom: 100px;
+  padding-bottom: 140px;
 }
 
 /* Header */
@@ -175,6 +175,7 @@
 .settings-section {
   background: var(--white);
   padding: var(--space-lg);
+  padding-bottom: 90px;
   border-top: 1px solid var(--cream-dark);
 }
 .settings-heading {
