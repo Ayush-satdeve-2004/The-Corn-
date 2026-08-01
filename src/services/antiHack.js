@@ -145,6 +145,20 @@ const checkDevTools = () => {
   }
 };
 
+// Mobile App-Switch & Screen Recording / Screenshot Obscurity
+const handleVisibilityOrBlur = () => {
+  if (document.hidden || !document.hasFocus()) {
+    showPrivacyShield(0);
+  } else {
+    // Small delay to prevent flickering when returning focus
+    setTimeout(() => {
+      if (document.hasFocus() && !document.hidden) {
+        hidePrivacyShield();
+      }
+    }, 300);
+  }
+};
+
 /**
  * Initializes active anti-hack, anti-inspect, and anti-screenshot privacy protection.
  */
@@ -156,6 +170,9 @@ export const initProtection = () => {
   document.addEventListener('cut', handleCopyCut);
   window.addEventListener('keydown', handleKeyDown, true);
   window.addEventListener('keyup', handleKeyUp, true);
+  window.addEventListener('blur', handleVisibilityOrBlur);
+  window.addEventListener('focus', handleVisibilityOrBlur);
+  document.addEventListener('visibilitychange', handleVisibilityOrBlur);
 
   if (!devToolsCheckInterval) {
     devToolsCheckInterval = setInterval(checkDevTools, 2000);
@@ -173,6 +190,9 @@ export const destroyProtection = () => {
   document.removeEventListener('cut', handleCopyCut);
   window.removeEventListener('keydown', handleKeyDown, true);
   window.removeEventListener('keyup', handleKeyUp, true);
+  window.removeEventListener('blur', handleVisibilityOrBlur);
+  window.removeEventListener('focus', handleVisibilityOrBlur);
+  document.removeEventListener('visibilitychange', handleVisibilityOrBlur);
   if (devToolsCheckInterval) {
     clearInterval(devToolsCheckInterval);
     devToolsCheckInterval = null;
