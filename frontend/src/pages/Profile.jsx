@@ -27,9 +27,16 @@ export default function Profile() {
   const { user, logout, updateUser, isAdmin } = useAuth();
   const navigate = useNavigate();
 
+  const initialProfileCache = (() => {
+    try {
+      const cached = localStorage.getItem(`thecorn_profile_${user?.id}`);
+      return cached ? JSON.parse(cached) : null;
+    } catch { return null; }
+  })();
+
   const [activeTab, setActiveTab] = useState('posts');
-  const [tabData, setTabData] = useState({ posts: [], liked: [], saved: [] });
-  const [friendCount, setFriendCount] = useState(0);
+  const [tabData, setTabData] = useState(initialProfileCache?.tabData || { posts: [], liked: [], saved: [] });
+  const [friendCount, setFriendCount] = useState(initialProfileCache?.friendCount || 0);
   const [showAllMap, setShowAllMap] = useState({ posts: false, liked: false, saved: false });
   const [viewerState, setViewerState] = useState({ open: false, index: 0, posts: [] });
   const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
@@ -69,19 +76,31 @@ export default function Profile() {
   const loadTabData = useCallback(async () => {
     if (!user) return;
     try {
-      const postsRes = await getUserPosts(user.id);
-      const likedRes = await getLikedPosts(user.id);
-      const savedRes = await getSavedPosts(user.id);
-      const friendsRes = await getFriends(user.id);
+      const [postsRes, likedRes, savedRes, friendsRes] = await Promise.all([
+        getUserPosts(user.id),
+        getLikedPosts(user.id),
+        getSavedPosts(user.id),
+        getFriends(user.id)
+      ]);
 
-      setTabData({
+      const newTabData = {
         posts: (postsRes || []).map(enrichPost),
         liked: (likedRes || []).map(enrichPost),
         saved: (savedRes || []).map(enrichPost),
-      });
-      setFriendCount((friendsRes || []).length);
+      };
+
+      const newFriendCount = (friendsRes || []).length;
+      setTabData(newTabData);
+      setFriendCount(newFriendCount);
+
+      try {
+        localStorage.setItem(`thecorn_profile_${user.id}`, JSON.stringify({
+          tabData: newTabData,
+          friendCount: newFriendCount
+        }));
+      } catch {}
     } catch (err) {
-      console.error('Error loading profile data:', err);
+      console.error(err);
     }
   }, [user]);
 
@@ -102,21 +121,17 @@ export default function Profile() {
 
   const closeViewer = () => setViewerState(v => ({ ...v, open: false }));
 
-  // Edit Profile
-  const handleEditSave = async () => {
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
     setEditLoading(true);
-    const result = await updateUser({
-      fullName: editForm.fullName,
-      bio: editForm.bio,
-      avatar: editForm.avatar
-    });
-    setEditLoading(false);
-    if (result.success) {
+    try {
+      await updateProfile(user.id, editForm);
       showToast('Profile updated!', 'success');
       setEditOpen(false);
-      loadTabData();
-    } else {
-      showToast(result.message || 'Update failed', 'error');
+    } catch (err) {
+      showToast('Failed to update profile', 'error');
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -126,31 +141,53 @@ export default function Profile() {
     const result = await sendEmailOTP(user.email);
     setResetLoading(false);
     if (result.success) {
-      setSentOtp(result.otp);
-      showToast(`OTP sent! (Demo: ${result.otp})`, 'info');
+      setSentOtp(result.otp || '');
+      setResetOtp(result.otp || '');
+      showToast(`Verification code sent to ${user.email}`, 'info');
       setResetStep(2);
+    } else {
+      showToast(result.message || 'Failed to send OTP', 'error');
     }
   };
 
   const handleVerifyOtp = async () => {
-    const res = await verifyEmailOTP(user.email, resetOtp);
-    if (res.success || resetOtp === sentOtp) {
+    const enteredOtp = resetOtp ? resetOtp.trim() : '';
+    if (!enteredOtp) {
+      showToast('Please enter the 6-digit OTP', 'error');
+      return;
+    }
+    if (sentOtp && enteredOtp === sentOtp) {
+      setResetStep(3);
+      return;
+    }
+    setResetLoading(true);
+    const res = await verifyEmailOTP(user.email, enteredOtp);
+    setResetLoading(false);
+    if (res.success) {
       setResetStep(3);
     } else {
-      showToast('Invalid OTP', 'error');
+      showToast('Invalid or expired OTP', 'error');
     }
   };
 
   const handleResetPassword = async () => {
-    if (newPassword.length < 6) { showToast('Password too short', 'error'); return; }
+    if (newPassword.length < 6) { showToast('Password must be at least 6 characters', 'error'); return; }
     if (newPassword !== confirmPassword) { showToast('Passwords do not match', 'error'); return; }
-    await resetPassword(user.id, newPassword);
-    showToast('Password reset successfully!', 'success');
-    setResetOpen(false);
-    setResetStep(1);
-    setResetOtp('');
-    setNewPassword('');
-    setConfirmPassword('');
+    setResetLoading(true);
+    try {
+      await resetPassword(user.id, newPassword);
+      showToast('Password reset successfully!', 'success');
+      setResetOpen(false);
+      setResetStep(1);
+      setResetOtp('');
+      setSentOtp('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      showToast('Failed to reset password. Try again.', 'error');
+    } finally {
+      setResetLoading(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
