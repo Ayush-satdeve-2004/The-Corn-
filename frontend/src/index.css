@@ -667,15 +667,7 @@ button {
     --text-3xl: 1.5rem;
     --text-2xl: 1.25rem;
   }
-  .toast-container {
-    bottom: var(--space-md);
-    right: var(--space-md);
-    left: var(--space-md);
-  }
-  .toast {
-    min-width: unset;
-    width: 100%;
-  }
+
 }
 
 @media (max-width: 480px) {
