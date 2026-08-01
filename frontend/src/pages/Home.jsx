@@ -31,9 +31,11 @@ export default function Home() {
   const { activeUpload } = useUpload();
   const navigate = useNavigate();
 
-  const [posts, setPosts] = useState([]);
-  const [enrichedPosts, setEnrichedPosts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const memoryCache = window.__CORN_FEED_CACHE__ || [];
+
+  const [posts, setPosts] = useState(memoryCache);
+  const [enrichedPosts, setEnrichedPosts] = useState(memoryCache);
+  const [isLoading, setIsLoading] = useState(memoryCache.length === 0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedPostIndex, setSelectedPostIndex] = useState(null);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -60,14 +62,17 @@ export default function Home() {
         timeAgo: getTimeAgo(post.timestamp),
       }));
 
+      window.__CORN_FEED_CACHE__ = enriched;
       setPosts(rawPosts);
       setEnrichedPosts(enriched);
+      setIsLoading(false);
 
       if (user) {
         getFriends(user.id).then(f => setFriends(f)).catch(() => {});
       }
     } catch (err) {
       console.error('Error loading feed:', err);
+      setIsLoading(false);
     }
   }, [user]);
 

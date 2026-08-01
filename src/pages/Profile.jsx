@@ -27,9 +27,11 @@ export default function Profile() {
   const { user, logout, updateUser, isAdmin } = useAuth();
   const navigate = useNavigate();
 
+  const profileMemory = window.__CORN_PROFILE_CACHE__?.[user?.id] || null;
+
   const [activeTab, setActiveTab] = useState('posts');
-  const [tabData, setTabData] = useState({ posts: [], liked: [], saved: [] });
-  const [friendCount, setFriendCount] = useState(0);
+  const [tabData, setTabData] = useState(profileMemory?.tabData || { posts: [], liked: [], saved: [] });
+  const [friendCount, setFriendCount] = useState(profileMemory?.friendCount || 0);
   const [showAllMap, setShowAllMap] = useState({ posts: false, liked: false, saved: false });
   const [viewerState, setViewerState] = useState({ open: false, index: 0, posts: [] });
   const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
@@ -76,12 +78,19 @@ export default function Profile() {
         getFriends(user.id)
       ]);
 
-      setTabData({
+      const newTabData = {
         posts: (postsRes || []).map(enrichPost),
         liked: (likedRes || []).map(enrichPost),
         saved: (savedRes || []).map(enrichPost),
-      });
-      setFriendCount((friendsRes || []).length);
+      };
+
+      const newFriendCount = (friendsRes || []).length;
+
+      window.__CORN_PROFILE_CACHE__ = window.__CORN_PROFILE_CACHE__ || {};
+      window.__CORN_PROFILE_CACHE__[user.id] = { tabData: newTabData, friendCount: newFriendCount };
+
+      setTabData(newTabData);
+      setFriendCount(newFriendCount);
     } catch (err) {
       console.error(err);
     }
