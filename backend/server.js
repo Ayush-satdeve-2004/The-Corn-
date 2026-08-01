@@ -617,18 +617,33 @@ app.post('/api/posts/:id/like', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Post not found' });
     }
     const { userId } = req.body;
-    const post = await Post.findById(req.params.id);
-
-    if (post) {
-      const idx = post.likes.indexOf(userId);
-      if (idx === -1) post.likes.push(userId);
-      else post.likes.splice(idx, 1);
-      await post.save();
-      return res.json({ success: true, likes: post.likes });
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'userId is required' });
     }
-    res.status(404).json({ success: false });
+
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ success: false, message: 'Post not found' });
+    }
+
+    if (!Array.isArray(post.likes)) {
+      post.likes = [];
+    }
+
+    const targetUserId = String(userId);
+    const existingIndex = post.likes.findIndex(id => String(id) === targetUserId);
+
+    if (existingIndex === -1) {
+      post.likes.push(targetUserId);
+    } else {
+      post.likes.splice(existingIndex, 1);
+    }
+
+    await post.save();
+    return res.json({ success: true, likes: post.likes });
   } catch (err) {
-    res.status(500).json({ success: false });
+    console.error('Like post error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 
@@ -642,12 +657,14 @@ app.post('/api/posts/:id/comment', async (req, res) => {
     const post = await Post.findById(req.params.id);
 
     if (post) {
+      if (!Array.isArray(post.comments)) post.comments = [];
       post.comments.push({ userId, text, timestamp: Date.now() });
       await post.save();
       return res.json({ success: true, comments: post.comments });
     }
     res.status(404).json({ success: false });
   } catch (err) {
+    console.error('Comment error:', err);
     res.status(500).json({ success: false });
   }
 });
@@ -662,6 +679,7 @@ app.delete('/api/posts/:id/comment/:commentId', async (req, res) => {
     const post = await Post.findById(id);
     if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
 
+    if (!Array.isArray(post.comments)) post.comments = [];
     post.comments = post.comments.filter((c, idx) => {
       const cId = c._id ? c._id.toString() : String(idx);
       return cId !== commentId && String(c.timestamp) !== commentId && String(idx) !== commentId;
@@ -682,18 +700,33 @@ app.post('/api/posts/:id/save', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Post not found' });
     }
     const { userId } = req.body;
-    const post = await Post.findById(req.params.id);
-
-    if (post) {
-      const idx = post.saves.indexOf(userId);
-      if (idx === -1) post.saves.push(userId);
-      else post.saves.splice(idx, 1);
-      await post.save();
-      return res.json({ success: true, saves: post.saves });
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'userId is required' });
     }
-    res.status(404).json({ success: false });
+
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ success: false, message: 'Post not found' });
+    }
+
+    if (!Array.isArray(post.saves)) {
+      post.saves = [];
+    }
+
+    const targetUserId = String(userId);
+    const existingIndex = post.saves.findIndex(id => String(id) === targetUserId);
+
+    if (existingIndex === -1) {
+      post.saves.push(targetUserId);
+    } else {
+      post.saves.splice(existingIndex, 1);
+    }
+
+    await post.save();
+    return res.json({ success: true, saves: post.saves });
   } catch (err) {
-    res.status(500).json({ success: false });
+    console.error('Save post error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 
