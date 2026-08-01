@@ -150,12 +150,20 @@ const handleVisibilityOrBlur = () => {
   if (document.hidden || !document.hasFocus()) {
     showPrivacyShield(0);
   } else {
-    // Small delay to prevent flickering when returning focus
     setTimeout(() => {
       if (document.hasFocus() && !document.hidden) {
         hidePrivacyShield();
       }
     }, 300);
+  }
+};
+
+// Detect multi-touch screenshot gestures (e.g. 3-finger swipe on Xiaomi, Realme, Oppo, Samsung, iOS)
+const handleTouchStart = (e) => {
+  if (e.touches && e.touches.length >= 2) {
+    showPrivacyShield(2500);
+    clearClipboard();
+    logSecurityEvent('MULTI_TOUCH_SCREENSHOT_PREVENTED', { touchCount: e.touches.length });
   }
 };
 
@@ -173,6 +181,7 @@ export const initProtection = () => {
   window.addEventListener('blur', handleVisibilityOrBlur);
   window.addEventListener('focus', handleVisibilityOrBlur);
   document.addEventListener('visibilitychange', handleVisibilityOrBlur);
+  window.addEventListener('touchstart', handleTouchStart, { passive: true });
 
   if (!devToolsCheckInterval) {
     devToolsCheckInterval = setInterval(checkDevTools, 2000);
@@ -193,6 +202,7 @@ export const destroyProtection = () => {
   window.removeEventListener('blur', handleVisibilityOrBlur);
   window.removeEventListener('focus', handleVisibilityOrBlur);
   document.removeEventListener('visibilitychange', handleVisibilityOrBlur);
+  window.removeEventListener('touchstart', handleTouchStart);
   if (devToolsCheckInterval) {
     clearInterval(devToolsCheckInterval);
     devToolsCheckInterval = null;
