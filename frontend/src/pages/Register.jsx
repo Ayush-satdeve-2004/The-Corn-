@@ -72,13 +72,39 @@ export default function Register() {
     setTimeout(() => setToast(null), 3300);
   };
 
+  const validateMobileNumber = (mobile) => {
+    const clean = String(mobile || '').trim();
+    if (!/^\d{10}$/.test(clean)) {
+      return { valid: false, message: 'enter valid number' };
+    }
+    // Case 3: Mobile number must NEVER start with 0, 1, 2, 3, 4, 5, 6
+    if (['0', '1', '2', '3', '4', '5', '6'].includes(clean[0])) {
+      return { valid: false, message: 'enter valid number' };
+    }
+    // Case 1: Mobile number cannot be NNNNNNNNNN (all 10 digits identical e.g. 1111111111, 9999999999)
+    if (/^(\d)\1{9}$/.test(clean)) {
+      return { valid: false, message: 'enter valid number' };
+    }
+    // Case 2: Mobile number cannot be NMNMNMNMNM or MNMNMNMNMN (e.g. 1212121212, 9898989898)
+    const pattern = clean.slice(0, 2);
+    if (clean === pattern.repeat(5) && pattern[0] !== pattern[1]) {
+      return { valid: false, message: 'enter valid number' };
+    }
+    return { valid: true };
+  };
+
   // Step 1: Submit Details & Proceed to Email Verification
   const handleStep1Submit = (e) => {
     e.preventDefault();
     const newErrors = {};
     if (!formData.fullName.trim()) newErrors.fullName = 'Full Name is required';
     if (!formData.email.trim() || !/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Valid email is required';
-    if (!formData.mobile.trim() || formData.mobile.length < 10) newErrors.mobile = 'Valid 10-digit mobile number is required';
+
+    const mobileCheck = validateMobileNumber(formData.mobile);
+    if (!mobileCheck.valid) {
+      newErrors.mobile = mobileCheck.message;
+      showToast(mobileCheck.message);
+    }
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);

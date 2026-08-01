@@ -145,10 +145,24 @@ const uid = (doc) => doc._id.toString();
 // AUTH ROUTES
 // ==========================================
 
+function validateMobileNumber(mobile) {
+  const clean = String(mobile || '').trim();
+  if (!/^\d{10}$/.test(clean)) return false;
+  if (['0', '1', '2', '3', '4', '5', '6'].includes(clean[0])) return false;
+  if (/^(\d)\1{9}$/.test(clean)) return false;
+  const pattern = clean.slice(0, 2);
+  if (clean === pattern.repeat(5) && pattern[0] !== pattern[1]) return false;
+  return true;
+}
+
 // Register User
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { fullName, email, mobile, password } = req.body;
+
+    if (!validateMobileNumber(mobile)) {
+      return res.status(400).json({ success: false, message: 'enter valid number' });
+    }
 
     const existing = await User.findOne({ $or: [{ email: email.toLowerCase() }, { mobile }] });
     if (existing) {
