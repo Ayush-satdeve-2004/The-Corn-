@@ -421,6 +421,43 @@ button {
   z-index: var(--z-modal);
   position: relative;
   animation: scaleIn var(--transition-normal);
+  color: #000000 !important;
+}
+
+/* Universal Black Text Rule for all Popups, Modals, and Toasts */
+.modal-overlay,
+.modal-card,
+.modal-content,
+.share-modal-card,
+.share-modal-container,
+.toast,
+.toast-message,
+.toast-container {
+  color: #000000 !important;
+}
+
+.modal-title,
+.share-modal-header h3,
+.modal-card h2,
+.modal-card h3,
+.modal-card h4,
+.modal-card p,
+.modal-desc,
+.modal-content p,
+.modal-content h2,
+.modal-content h3 {
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+
+.modal-card input,
+.modal-card textarea,
+.modal-card select,
+.modal-content input,
+.modal-content textarea,
+.modal-content select {
+  color: #000000 !important;
+  background-color: #ffffff !important;
 }
 
 [data-theme='dark'] .modal {

@@ -146,18 +146,37 @@ const checkDevTools = () => {
 };
 
 /**
- * Initializes anti-hack, anti-inspect, and anti-screenshot privacy protection.
- * (Deactivated for testing as requested by user)
+ * Initializes active anti-hack, anti-inspect, and anti-screenshot privacy protection.
  */
 export const initProtection = () => {
-  // Anti-hack protection currently deactivated for testing
-  hidePrivacyShield();
+  document.addEventListener('contextmenu', handleContextMenu);
+  document.addEventListener('dragstart', handleDragStart);
+  document.addEventListener('selectstart', handleSelectStart);
+  document.addEventListener('copy', handleCopyCut);
+  document.addEventListener('cut', handleCopyCut);
+  window.addEventListener('keydown', handleKeyDown, true);
+  window.addEventListener('keyup', handleKeyUp, true);
+
+  if (!devToolsCheckInterval) {
+    devToolsCheckInterval = setInterval(checkDevTools, 2000);
+  }
 };
 
 /**
  * Destroys protection event listeners.
  */
 export const destroyProtection = () => {
+  document.removeEventListener('contextmenu', handleContextMenu);
+  document.removeEventListener('dragstart', handleDragStart);
+  document.removeEventListener('selectstart', handleSelectStart);
+  document.removeEventListener('copy', handleCopyCut);
+  document.removeEventListener('cut', handleCopyCut);
+  window.removeEventListener('keydown', handleKeyDown, true);
+  window.removeEventListener('keyup', handleKeyUp, true);
+  if (devToolsCheckInterval) {
+    clearInterval(devToolsCheckInterval);
+    devToolsCheckInterval = null;
+  }
   hidePrivacyShield();
 };
 
