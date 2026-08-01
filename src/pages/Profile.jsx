@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
   getUserPosts, getLikedPosts, getSavedPosts, deleteAccount, resetPassword, sendEmailOTP, verifyEmailOTP,
-  getFriends, deletePost, updateProfile
+  getFriends, deletePost, updateProfile, submitFeedback
 } from '../services/api';
 import FullscreenViewer from '../components/FullscreenViewer';
 import Toast from '../components/Toast';
@@ -62,6 +62,43 @@ export default function Profile() {
 
   // Delete confirm
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+
+  // App Feedback Modal
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackCategory, setFeedbackCategory] = useState('General Feedback');
+  const [feedbackRating, setFeedbackRating] = useState(5);
+  const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+
+  const handleSubmitFeedback = async () => {
+    if (!feedbackText.trim()) {
+      showToast('Please enter your feedback message', 'error');
+      return;
+    }
+    setFeedbackSubmitting(true);
+    try {
+      const res = await submitFeedback({
+        userId: user.id,
+        userEmail: user.email || '',
+        userName: user.fullName || user.username,
+        category: feedbackCategory,
+        rating: feedbackRating,
+        message: feedbackText
+      });
+      if (res && res.success) {
+        showToast('Thank you! Your feedback has been submitted.', 'success');
+        setFeedbackOpen(false);
+        setFeedbackText('');
+        setFeedbackRating(5);
+      } else {
+        showToast(res?.message || 'Failed to submit feedback', 'error');
+      }
+    } catch (err) {
+      showToast('Failed to submit feedback', 'error');
+    } finally {
+      setFeedbackSubmitting(false);
+    }
+  };
 
   const showToast = (message, type = 'info') => {
     setToast({ visible: true, message, type });
@@ -334,6 +371,12 @@ export default function Profile() {
       <div className="settings-section">
         <h3 className="settings-heading">ACCOUNT</h3>
         <div className="settings-list">
+          <button className="settings-row" onClick={() => setFeedbackOpen(true)}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            Give App Feedback
+          </button>
           <button className="settings-row" onClick={() => { setResetStep(1); setResetOpen(true); }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
               <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
@@ -363,6 +406,74 @@ export default function Profile() {
         </div>
         <p className="app-version">The Corn v1.0.0</p>
       </div>
+
+      {/* App Feedback Modal */}
+      {feedbackOpen && (
+        <div className="modal-overlay" onClick={() => setFeedbackOpen(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
+            <h3>App Feedback & Suggestions</h3>
+            <p className="modal-desc">Help us improve The Corn! Share your feedback, feature requests, or report issues.</p>
+            
+            <div className="form-group">
+              <label>Feedback Category</label>
+              <select
+                className="input-field"
+                value={feedbackCategory}
+                onChange={e => setFeedbackCategory(e.target.value)}
+              >
+                <option value="General Feedback">General Feedback</option>
+                <option value="Feature Request">Feature Request</option>
+                <option value="Bug Report">Bug Report</option>
+                <option value="Performance & Speed">Performance & Speed</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Rating (1 - 5 Stars)</label>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                {[1, 2, 3, 4, 5].map(star => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setFeedbackRating(star)}
+                    style={{
+                      background: feedbackRating >= star ? '#8B5324' : 'var(--sage-light)',
+                      color: feedbackRating >= star ? '#FFF' : '#36190D',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '6px 12px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {star} ★
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginTop: '1rem' }}>
+              <label>Your Message / Ideas</label>
+              <textarea
+                className="input-field"
+                rows={4}
+                maxLength={1000}
+                value={feedbackText}
+                onChange={e => setFeedbackText(e.target.value)}
+                placeholder="Tell us what you love or what we should improve..."
+              />
+              <span className="char-count">{feedbackText.length}/1000</span>
+            </div>
+
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setFeedbackOpen(false)}>Cancel</button>
+              <button className="btn-primary" onClick={handleSubmitFeedback} disabled={feedbackSubmitting}>
+                {feedbackSubmitting ? 'Submitting...' : 'Submit Feedback'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Profile Modal */}
       {editOpen && (

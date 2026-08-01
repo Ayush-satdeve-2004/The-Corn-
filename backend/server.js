@@ -14,6 +14,7 @@ const compression = require('compression');
 const User = require('./models/User');
 const Post = require('./models/Post');
 const FriendRequest = require('./models/FriendRequest');
+const Feedback = require('./models/Feedback');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -748,6 +749,40 @@ app.delete('/api/posts/:id', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ success: false });
+  }
+});
+
+// Submit App Feedback
+app.post('/api/feedback', async (req, res) => {
+  try {
+    const { userId, userEmail, userName, category, rating, message } = req.body;
+    if (!message || !message.trim()) {
+      return res.status(400).json({ success: false, message: 'Feedback message is required' });
+    }
+
+    const newFeedback = await Feedback.create({
+      userId: userId || 'anonymous',
+      userEmail: userEmail || '',
+      userName: userName || 'App User',
+      category: category || 'General Feedback',
+      rating: Number(rating) || 5,
+      message: message.trim()
+    });
+
+    res.json({ success: true, message: 'Feedback submitted successfully', feedbackId: newFeedback._id });
+  } catch (err) {
+    console.error('Submit feedback error:', err);
+    res.status(500).json({ success: false, message: 'Failed to submit feedback' });
+  }
+});
+
+// Admin: Get all Feedback
+app.get('/api/admin/feedback', async (req, res) => {
+  try {
+    const feedbacks = await Feedback.find().sort({ timestamp: -1 });
+    res.json(feedbacks);
+  } catch (err) {
+    res.json([]);
   }
 });
 

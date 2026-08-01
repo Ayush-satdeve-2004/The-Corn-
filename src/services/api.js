@@ -331,3 +331,18 @@ export const getActiveUsers = async () => {
 export const deleteUserByAdmin = async (userId) => {
   return request(`/admin/users/${userId}`, { method: 'DELETE' });
 };
+
+export const submitFeedback = async (feedbackData) => {
+  return request('/feedback', {
+    method: 'POST',
+    body: JSON.stringify(feedbackData),
+  });
+};
+
+export const getAllFeedback = async () => {
+  try {
+    return await request('/admin/feedback');
+  } catch {
+    return [];
+  }
+};
