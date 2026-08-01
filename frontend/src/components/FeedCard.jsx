@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import ProtectedMedia from './ProtectedMedia';
 import Watermark from './Watermark';
 import { useAuth } from '../context/AuthContext';
 import { getOptimizedMediaUrl } from '../services/api';
@@ -149,56 +150,41 @@ export default function FeedCard({ post, currentUserId, onLike, onComment, onSav
           <Watermark text={watermarkText} variant={post.type} />
         )}
 
-        {post.type === 'photo' && post.mediaUrl && (
-          <img
+        {post.mediaUrl && (
+          <ProtectedMedia
+            type={post.type}
             src={getOptimizedMediaUrl(post.mediaUrl)}
             alt="Post"
-            className="feed-media-img"
-            loading="lazy"
-            decoding="async"
-            draggable="false"
-            onContextMenu={e => e.preventDefault()}
+            className={post.type === 'photo' ? 'feed-media-img' : 'feed-media-video'}
             onClick={handleCardClick}
+            videoRef={videoRef}
           />
         )}
         {post.type === 'video' && post.mediaUrl && (
-          <>
-            <video
-              ref={videoRef}
-              src={getOptimizedMediaUrl(post.mediaUrl)}
-              preload="metadata"
-              controls
-              controlsList="nodownload noplaybackrate nofullscreen"
-              disablePictureInPicture={false}
-              className="feed-media-video"
-              onContextMenu={e => e.preventDefault()}
-            />
-            {/* Custom fullscreen button — makes the WRAPPER fullscreen so watermark is included */}
-            <button
-              className="feed-fullscreen-btn"
-              onClick={toggleFullscreen}
-              title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-              aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-            >
-              {isFullscreen ? (
-                /* Exit fullscreen icon */
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
-                  <polyline points="4 14 8 14 8 18" />
-                  <polyline points="20 10 16 10 16 6" />
-                  <line x1="14" y1="10" x2="21" y2="3" />
-                  <line x1="3" y1="21" x2="10" y2="14" />
-                </svg>
-              ) : (
-                /* Enter fullscreen icon */
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
-                  <polyline points="15 3 21 3 21 9" />
-                  <polyline points="9 21 3 21 3 15" />
-                  <line x1="21" y1="3" x2="14" y2="10" />
-                  <line x1="3" y1="21" x2="10" y2="14" />
-                </svg>
-              )}
-            </button>
-          </>
+          <button
+            className="feed-fullscreen-btn"
+            onClick={toggleFullscreen}
+            title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+            aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+          >
+            {isFullscreen ? (
+              /* Exit fullscreen icon */
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+                <polyline points="4 14 8 14 8 18" />
+                <polyline points="20 10 16 10 16 6" />
+                <line x1="14" y1="10" x2="21" y2="3" />
+                <line x1="3" y1="21" x2="10" y2="14" />
+              </svg>
+            ) : (
+              /* Enter fullscreen icon */
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+                <polyline points="15 3 21 3 21 9" />
+                <polyline points="9 21 3 21 3 15" />
+                <line x1="21" y1="3" x2="14" y2="10" />
+                <line x1="3" y1="21" x2="10" y2="14" />
+              </svg>
+            )}
+          </button>
         )}
         {post.type === 'text' && (
           <div
