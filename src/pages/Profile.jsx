@@ -27,16 +27,9 @@ export default function Profile() {
   const { user, logout, updateUser, isAdmin } = useAuth();
   const navigate = useNavigate();
 
-  const initialProfileCache = (() => {
-    try {
-      const cached = localStorage.getItem(`thecorn_profile_${user?.id}`);
-      return cached ? JSON.parse(cached) : null;
-    } catch { return null; }
-  })();
-
   const [activeTab, setActiveTab] = useState('posts');
-  const [tabData, setTabData] = useState(initialProfileCache?.tabData || { posts: [], liked: [], saved: [] });
-  const [friendCount, setFriendCount] = useState(initialProfileCache?.friendCount || 0);
+  const [tabData, setTabData] = useState({ posts: [], liked: [], saved: [] });
+  const [friendCount, setFriendCount] = useState(0);
   const [showAllMap, setShowAllMap] = useState({ posts: false, liked: false, saved: false });
   const [viewerState, setViewerState] = useState({ open: false, index: 0, posts: [] });
   const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
@@ -83,22 +76,12 @@ export default function Profile() {
         getFriends(user.id)
       ]);
 
-      const newTabData = {
+      setTabData({
         posts: (postsRes || []).map(enrichPost),
         liked: (likedRes || []).map(enrichPost),
         saved: (savedRes || []).map(enrichPost),
-      };
-
-      const newFriendCount = (friendsRes || []).length;
-      setTabData(newTabData);
-      setFriendCount(newFriendCount);
-
-      try {
-        localStorage.setItem(`thecorn_profile_${user.id}`, JSON.stringify({
-          tabData: newTabData,
-          friendCount: newFriendCount
-        }));
-      } catch {}
+      });
+      setFriendCount((friendsRes || []).length);
     } catch (err) {
       console.error(err);
     }
@@ -142,7 +125,7 @@ export default function Profile() {
     setResetLoading(false);
     if (result.success) {
       setSentOtp(result.otp || '');
-      setResetOtp(result.otp || '');
+      setResetOtp(''); // User enters real OTP received in email
       showToast(`Verification code sent to ${user.email}`, 'info');
       setResetStep(2);
     } else {
@@ -436,7 +419,6 @@ export default function Profile() {
             {resetStep === 2 && (
               <>
                 <p className="modal-desc">Enter the 6-digit OTP sent to your email</p>
-                {sentOtp && <p className="demo-otp-hint">Demo OTP: <strong>{sentOtp}</strong></p>}
                 <input className="input-field" placeholder="Enter OTP" value={resetOtp}
                   onChange={e => setResetOtp(e.target.value)} maxLength={6} />
                 <div className="modal-actions">

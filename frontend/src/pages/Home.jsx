@@ -31,16 +31,9 @@ export default function Home() {
   const { activeUpload } = useUpload();
   const navigate = useNavigate();
 
-  const initialCachedEnriched = (() => {
-    try {
-      const cached = localStorage.getItem(CACHED_FEED_KEY);
-      return cached ? JSON.parse(cached) : [];
-    } catch { return []; }
-  })();
-
   const [posts, setPosts] = useState([]);
-  const [enrichedPosts, setEnrichedPosts] = useState(initialCachedEnriched);
-  const [isLoading, setIsLoading] = useState(initialCachedEnriched.length === 0);
+  const [enrichedPosts, setEnrichedPosts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedPostIndex, setSelectedPostIndex] = useState(null);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -69,10 +62,6 @@ export default function Home() {
 
       setPosts(rawPosts);
       setEnrichedPosts(enriched);
-
-      try {
-        localStorage.setItem(CACHED_FEED_KEY, JSON.stringify(enriched));
-      } catch {}
 
       if (user) {
         getFriends(user.id).then(f => setFriends(f)).catch(() => {});
