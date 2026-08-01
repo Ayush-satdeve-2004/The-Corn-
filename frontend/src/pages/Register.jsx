@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { registerUser, sendEmailOTP, verifyEmailOTP, checkExistingUser } from '../services/api';
+import Toast from '../components/Toast';
 import './Register.css';
 
 export default function Register() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState(null);
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
 
   // Form Data
   const [formData, setFormData] = useState({
@@ -34,15 +35,16 @@ export default function Register() {
     special: false
   });
 
-  const [showPassword, setShowPassword] = useState(false);
+  // Success Modal
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Handlers
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear error
     if (errors[name]) {
-      setErrors({ ...errors, [name]: '' });
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
 
     if (name === 'password') {
@@ -67,9 +69,8 @@ export default function Register() {
     return 'strong';
   };
 
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3300);
+  const showToast = (message, type = 'error') => {
+    setToast({ visible: true, message, type });
   };
 
   const validateMobileNumber = (mobile) => {
@@ -103,7 +104,7 @@ export default function Register() {
     const mobileCheck = validateMobileNumber(formData.mobile);
     if (!mobileCheck.valid) {
       newErrors.mobile = mobileCheck.message;
-      showToast(mobileCheck.message);
+      showToast(mobileCheck.message, 'error');
     }
     
     if (Object.keys(newErrors).length > 0) {
@@ -116,7 +117,7 @@ export default function Register() {
       const checkRes = await checkExistingUser(formData.email, formData.mobile);
       if (checkRes && checkRes.exists) {
         const errMsg = checkRes.message || 'Email or mobile number already registered.';
-        showToast(errMsg);
+        showToast(errMsg, 'error');
         setErrors({ submit: errMsg });
         setLoading(false);
         return;
@@ -124,7 +125,7 @@ export default function Register() {
       setErrors({});
       setStep(2);
     } catch (err) {
-      showToast('Error checking user details');
+      showToast('Error checking user details', 'error');
     } finally {
       setLoading(false);
     }
@@ -143,10 +144,10 @@ export default function Register() {
     setLoading(true);
     try {
       const res = await sendEmailOTP(formData.email);
-      showToast(res.message || 'OTP sent to your email inbox');
+      showToast(res.message || 'OTP sent to your email inbox', 'info');
       setTimer(60);
     } catch (e) {
-      showToast('Error sending OTP email');
+      showToast('Error sending OTP email', 'error');
     }
     setLoading(false);
   };
@@ -216,7 +217,8 @@ export default function Register() {
 
   return (
     <div className="register-container">
-      {toast && <div className="toast">{toast}</div>}
+      <Toast message={toast.message} type={toast.type} isVisible={toast.visible}
+        onClose={() => setToast(t => ({ ...t, visible: false }))} />
       
       <div className="register-card">
         {isSuccess ? (
@@ -272,7 +274,7 @@ export default function Register() {
                     type="email"
                     name="email"
                     className="register-input"
-                    placeholder="name@example.com"
+                    placeholder="Enter your email"
                     value={formData.email}
                     onChange={handleInputChange}
                   />
@@ -281,13 +283,13 @@ export default function Register() {
 
                 <div className="input-group">
                   <label>Mobile Number</label>
-                  <div className="phone-input-group">
-                    <span className="phone-prefix">+91</span>
+                  <div className="mobile-input-wrap">
+                    <span className="country-code">+91</span>
                     <input
                       type="tel"
                       name="mobile"
-                      className="register-input"
-                      placeholder="9876543210"
+                      className="register-input mobile-input"
+                      placeholder="10-digit mobile number"
                       value={formData.mobile}
                       onChange={handleInputChange}
                       maxLength={10}
@@ -296,105 +298,99 @@ export default function Register() {
                   {errors.mobile && <span className="error-text">{errors.mobile}</span>}
                 </div>
 
-                <button type="submit" className="btn-primary" style={{ marginTop: '1rem' }}>
-                  Next Step
+                {errors.submit && <div className="error-text" style={{ textAlign: 'center', marginBottom: '1rem' }}>{errors.submit}</div>}
+
+                <button type="submit" className="btn-primary" disabled={loading}>
+                  {loading ? 'Checking…' : 'Next Step'}
                 </button>
-                <div style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.9rem' }}>
-                  Already have an account? <Link to="/login" style={{ color: 'var(--sage-dark)', fontWeight: 'bold', textDecoration: 'none' }}>Log In</Link>
-                </div>
               </form>
             )}
 
-            {/* Step 2: Email Verification (Brevo OTP) */}
+            {/* Step 2: Email Verification */}
             {step === 2 && (
               <div className="step-container">
-                <div className="verify-info">
-                  <p>We need to verify your email address.</p>
-                  <strong>{formData.email}</strong>
+                <h2>Verify Email</h2>
+                <p className="step-desc">
+                  Enter the 6-digit OTP code sent to <strong>{formData.email}</strong>.
+                </p>
+
+                <div className="otp-container">
+                  {emailOTP.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      ref={el => emailInputRefs.current[idx] = el}
+                      type="text"
+                      maxLength={1}
+                      className="otp-box"
+                      value={digit}
+                      onChange={e => handleOtpChange(idx, e.target.value)}
+                      onKeyDown={e => handleOtpKeyDown(idx, e)}
+                    />
+                  ))}
                 </div>
 
-                {!timer && emailOTP.join('').length === 0 ? (
-                  <button onClick={handleSendEmailOTP} className="btn-primary" disabled={loading}>
-                    Send OTP to Email
-                  </button>
-                ) : (
-                  <>
-                    <div className="otp-container">
-                      {emailOTP.map((digit, idx) => (
-                        <input
-                          key={`email-${idx}`}
-                          ref={el => emailInputRefs.current[idx] = el}
-                          type="text"
-                          maxLength={1}
-                          className={`otp-input ${errors.emailOtp ? 'error' : ''}`}
-                          value={digit}
-                          onChange={e => handleOtpChange(idx, e.target.value)}
-                          onKeyDown={e => handleOtpKeyDown(idx, e)}
-                        />
-                      ))}
-                    </div>
-                    {errors.emailOtp && <p className="error-text" style={{textAlign: 'center'}}>{errors.emailOtp}</p>}
-                    
-                    <button onClick={handleVerifyEmail} className="btn-primary" disabled={loading || emailOTP.join('').length !== 6}>
-                      Verify Email
-                    </button>
+                {errors.emailOtp && <span className="error-text center">{errors.emailOtp}</span>}
 
-                    <div className="resend-text">
-                      {timer > 0 ? (
-                        <span>Resend OTP in {timer}s</span>
-                      ) : (
-                        <button onClick={handleSendEmailOTP} className="resend-link">Resend OTP</button>
-                      )}
-                    </div>
-                  </>
-                )}
+                <div className="otp-actions">
+                  {timer > 0 ? (
+                    <span className="timer-text">Resend OTP in {timer}s</span>
+                  ) : (
+                    <button type="button" className="btn-link" onClick={handleSendEmailOTP} disabled={loading}>
+                      Send / Resend OTP
+                    </button>
+                  )}
+                </div>
 
                 <div className="button-group">
-                  <button onClick={() => setStep(1)} className="btn-secondary">Back</button>
+                  <button type="button" className="btn-secondary" onClick={() => setStep(1)}>
+                    Back
+                  </button>
+                  <button type="button" className="btn-primary" onClick={handleVerifyEmail} disabled={loading}>
+                    {loading ? 'Verifying...' : 'Verify OTP'}
+                  </button>
                 </div>
               </div>
             )}
 
-            {/* Step 3: Create Password */}
+            {/* Step 3: Password Creation */}
             {step === 3 && (
               <form className="step-container register-form" onSubmit={handleFinalSubmit}>
                 <div className="input-group">
                   <label>Create Password</label>
-                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      name="password"
-                      className="register-input"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                    />
-                    <button 
-                      type="button" 
-                      onClick={() => setShowPassword(!showPassword)}
-                      style={{ position: 'absolute', right: '1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cinnamon-light)' }}
-                    >
-                      {showPassword ? '👁️' : '👁️‍🗨️'}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="password-rules">
-                  <div className={`rule-item ${pwdRules.length ? 'met' : ''}`}>
-                    <span className="rule-icon">{pwdRules.length ? '✓' : '✗'}</span> Minimum 9 characters
-                  </div>
-                  <div className={`rule-item ${pwdRules.letters ? 'met' : ''}`}>
-                    <span className="rule-icon">{pwdRules.letters ? '✓' : '✗'}</span> At least 5 letters
-                  </div>
-                  <div className={`rule-item ${pwdRules.numbers ? 'met' : ''}`}>
-                    <span className="rule-icon">{pwdRules.numbers ? '✓' : '✗'}</span> At least 3 numbers
-                  </div>
-                  <div className={`rule-item ${pwdRules.special ? 'met' : ''}`}>
-                    <span className="rule-icon">{pwdRules.special ? '✓' : '✗'}</span> At least 1 special character
-                  </div>
+                  <input
+                    type="password"
+                    name="password"
+                    className="register-input"
+                    placeholder="Create a strong password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                  />
                   
-                  <div className="strength-bar-container">
-                    <div className={`strength-bar ${formData.password ? getStrengthClass() : ''}`}></div>
+                  {/* Security Rules Checklist */}
+                  <div className="pwd-rules">
+                    <div className={`rule-item ${pwdRules.length ? 'met' : ''}`}>
+                      <span className="rule-icon">{pwdRules.length ? '✓' : 'x'}</span>
+                      Minimum 9 characters
+                    </div>
+                    <div className={`rule-item ${pwdRules.letters ? 'met' : ''}`}>
+                      <span className="rule-icon">{pwdRules.letters ? '✓' : 'x'}</span>
+                      At least 5 letters
+                    </div>
+                    <div className={`rule-item ${pwdRules.numbers ? 'met' : ''}`}>
+                      <span className="rule-icon">{pwdRules.numbers ? '✓' : 'x'}</span>
+                      At least 3 numbers
+                    </div>
+                    <div className={`rule-item ${pwdRules.special ? 'met' : ''}`}>
+                      <span className="rule-icon">{pwdRules.special ? '✓' : 'x'}</span>
+                      At least 1 special character
+                    </div>
                   </div>
+
+                  {formData.password && (
+                    <div className={`strength-bar ${getStrengthClass()}`}>
+                      <div className="strength-fill"></div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="input-group">
@@ -403,26 +399,33 @@ export default function Register() {
                     type="password"
                     name="confirmPassword"
                     className="register-input"
+                    placeholder="Re-enter your password"
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
                   />
                   {errors.confirmPassword && <span className="error-text">{errors.confirmPassword}</span>}
                 </div>
 
-                {errors.submit && <p className="error-text" style={{textAlign: 'center'}}>{errors.submit}</p>}
+                {errors.submit && <div className="error-text center">{errors.submit}</div>}
 
                 <div className="button-group">
-                  <button type="button" onClick={() => setStep(2)} className="btn-secondary">Back</button>
+                  <button type="button" className="btn-secondary" onClick={() => setStep(2)}>
+                    Back
+                  </button>
                   <button 
                     type="submit" 
                     className="btn-primary" 
-                    disabled={loading || !Object.values(pwdRules).every(Boolean) || formData.password !== formData.confirmPassword}
+                    disabled={!Object.values(pwdRules).every(Boolean) || loading}
                   >
-                    Submit Application
+                    {loading ? 'Submitting...' : 'Submit Application'}
                   </button>
                 </div>
               </form>
             )}
+
+            <div className="register-footer">
+              Already have an account? <Link to="/login" className="login-link">Log In</Link>
+            </div>
           </>
         )}
       </div>

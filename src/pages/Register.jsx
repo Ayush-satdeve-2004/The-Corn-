@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { registerUser, sendEmailOTP, verifyEmailOTP, checkExistingUser } from '../services/api';
+import Toast from '../components/Toast';
 import './Register.css';
 
 export default function Register() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState(null);
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
 
   // Form Data
   const [formData, setFormData] = useState({
@@ -67,9 +68,8 @@ export default function Register() {
     return 'strong';
   };
 
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3300);
+  const showToast = (message, type = 'error') => {
+    setToast({ visible: true, message, type });
   };
 
   const validateMobileNumber = (mobile) => {
@@ -216,7 +216,8 @@ export default function Register() {
 
   return (
     <div className="register-container">
-      {toast && <div className="toast">{toast}</div>}
+      <Toast message={toast.message} type={toast.type} isVisible={toast.visible}
+        onClose={() => setToast(t => ({ ...t, visible: false }))} />
       
       <div className="register-card">
         {isSuccess ? (

@@ -19,6 +19,8 @@ const Feedback = require('./models/Feedback');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
 // Cloudinary Configuration
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'ucjbgbrn',
