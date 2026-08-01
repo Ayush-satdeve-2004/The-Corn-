@@ -160,7 +160,10 @@ export default function Home() {
     <div className="home-container">
       {/* Header */}
       <header className="home-header">
-        <h1 className="home-logo">🌽 The Corn</h1>
+        <div className="home-logo-wrap" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <img src="/logo.png" alt="The Corn Logo" style={{ height: '36px', borderRadius: '6px', objectFit: 'contain' }} />
+          <h1 className="home-logo" style={{ margin: 0, fontSize: '1.4rem' }}>The Corn</h1>
+        </div>
       </header>
 
       {/* Feed */}

@@ -236,8 +236,9 @@ export default function Register() {
           </div>
         ) : (
           <>
-            <div className="register-header">
-              <h1 className="register-logo">The Corn 🌽</h1>
+            <div className="register-header" style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <img src="/logo.png" alt="The Corn" style={{ width: '70px', height: '70px', borderRadius: '10px', objectFit: 'contain', marginBottom: '6px' }} />
+              <h1 className="register-logo">The Corn</h1>
               <p style={{ color: 'var(--cinnamon-light)' }}>Join the community</p>
             </div>
 

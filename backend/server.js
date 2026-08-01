@@ -21,11 +21,11 @@ const PORT = process.env.PORT || 5001;
 
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
-// Cloudinary Configuration
+// Cloudinary Configuration (Credentials securely read from Environment Variables)
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'ucjbgbrn',
-  api_key: process.env.CLOUDINARY_API_KEY || '952679157789617',
-  api_secret: process.env.CLOUDINARY_API_SECRET || 'Tqtys3xPady4g3mYRpO0rGrFTpc',
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 // Multer storage for media uploads (Admin 1 GB limit, Users 500 MB limit)

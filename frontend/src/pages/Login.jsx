@@ -169,7 +169,8 @@ export default function Login() {
       <div className="login-blob blob-2" />
 
       <div className="login-card fade-in">
-        <div className="login-logo-wrap">
+        <div className="login-logo-wrap" style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <img src="/logo.png" alt="The Corn" style={{ width: '80px', height: '80px', borderRadius: '12px', objectFit: 'contain', marginBottom: '8px' }} />
           <h1 className="login-title">The Corn</h1>
           <p className="login-sub">Welcome back to the field</p>
         </div>
