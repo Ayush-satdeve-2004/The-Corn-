@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { sendEmailOTP, verifyEmailOTP, resetPassword, getUserByUsername, getAllUsers } from '../services/mockBackend';
+import { sendEmailOTP, verifyEmailOTP, resetPassword } from '../services/api';
 import Toast from '../components/Toast';
 import './Login.css';
 
@@ -17,14 +17,13 @@ export default function Login() {
 
   // Forgot Password Modal state
   const [forgotOpen, setForgotOpen] = useState(false);
-  const [forgotStep, setForgotStep] = useState(1); // 1: Email/Username, 2: OTP, 3: New Password
+  const [forgotStep, setForgotStep] = useState(1); // 1: Email, 2: OTP, 3: New Password
   const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotTargetUser, setForgotTargetUser] = useState(null);
   const [forgotOtp, setForgotOtp] = useState('');
-  const [generatedOtp, setGeneratedOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [forgotError, setForgotError] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
 
   const showToast = (message, type = 'info') => {
@@ -68,52 +67,59 @@ export default function Login() {
     }
   };
 
-  // Step 1: Send OTP to email
-  const handleForgotSendOtp = (e) => {
+  // Step 1: Send OTP to email via Brevo
+  const handleForgotSendOtp = async (e) => {
     e.preventDefault();
     setForgotError('');
     const emailInput = forgotEmail.trim().toLowerCase();
-    if (!emailInput) {
-      setForgotError('Please enter your registered email address.');
+    if (!emailInput || !/\S+@\S+\.\S+/.test(emailInput)) {
+      setForgotError('Please enter a valid registered email address.');
       return;
     }
 
-    const all = getAllUsers();
-    const target = all.find(u => u.email.toLowerCase() === emailInput);
-
-    if (!target) {
-      setForgotError('No registered account found with that email address.');
-      return;
-    }
-
-    setForgotTargetUser(target);
-    const res = sendEmailOTP(target.email);
-    if (res.success) {
-      setGeneratedOtp(res.otp);
-      showToast(`OTP sent to ${target.email}! (Demo OTP: ${res.otp})`, 'info');
-      setForgotStep(2);
+    setForgotLoading(true);
+    try {
+      const res = await sendEmailOTP(emailInput);
+      if (res && res.success) {
+        showToast(`Verification code sent to ${emailInput}`, 'info');
+        setForgotStep(2);
+      } else {
+        setForgotError(res?.message || 'Failed to send OTP email.');
+      }
+    } catch (err) {
+      setForgotError('Error sending OTP. Please check your email.');
+    } finally {
+      setForgotLoading(false);
     }
   };
 
   // Step 2: Verify OTP
-  const handleForgotVerifyOtp = (e) => {
+  const handleForgotVerifyOtp = async (e) => {
     e.preventDefault();
     setForgotError('');
-    if (!forgotOtp.trim()) {
-      setForgotError('Please enter the OTP.');
+    const otpStr = forgotOtp.trim();
+    if (!otpStr || otpStr.length !== 6) {
+      setForgotError('Please enter the 6-digit OTP code.');
       return;
     }
 
-    const isValid = verifyEmailOTP(forgotTargetUser.email, forgotOtp.trim()) || forgotOtp.trim() === generatedOtp;
-    if (isValid) {
-      setForgotStep(3);
-    } else {
-      setForgotError('Incorrect or expired OTP. Please try again.');
+    setForgotLoading(true);
+    try {
+      const res = await verifyEmailOTP(forgotEmail.trim().toLowerCase(), otpStr);
+      if (res && res.success) {
+        setForgotStep(3);
+      } else {
+        setForgotError(res?.message || 'Incorrect or expired OTP code.');
+      }
+    } catch (err) {
+      setForgotError('Verification failed. Invalid or expired OTP.');
+    } finally {
+      setForgotLoading(false);
     }
   };
 
   // Step 3: Reset password
-  const handleForgotReset = (e) => {
+  const handleForgotReset = async (e) => {
     e.preventDefault();
     setForgotError('');
     if (newPassword.length < 6) {
@@ -125,14 +131,25 @@ export default function Login() {
       return;
     }
 
-    resetPassword(forgotTargetUser.id, newPassword);
-    showToast('Password reset successfully! You can now log in.', 'success');
-    setForgotOpen(false);
-    setForgotStep(1);
-    setForgotEmail('');
-    setForgotOtp('');
-    setNewPassword('');
-    setConfirmPassword('');
+    setForgotLoading(true);
+    try {
+      const res = await resetPassword(null, newPassword, forgotEmail.trim().toLowerCase());
+      if (res && res.success) {
+        showToast('Password reset successfully! You can now log in.', 'success');
+        setForgotOpen(false);
+        setForgotStep(1);
+        setForgotEmail('');
+        setForgotOtp('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        setForgotError(res?.message || 'Failed to reset password.');
+      }
+    } catch (err) {
+      setForgotError('Failed to reset password. Try again.');
+    } finally {
+      setForgotLoading(false);
+    }
   };
 
   return (
@@ -143,7 +160,6 @@ export default function Login() {
 
       <div className="login-card fade-in">
         <div className="login-logo-wrap">
-          <span className="login-corn-emoji">🌽</span>
           <h1 className="login-title">The Corn</h1>
           <p className="login-sub">Welcome back to the field</p>
         </div>
@@ -263,21 +279,23 @@ export default function Login() {
                     placeholder="Enter your email address"
                     value={forgotEmail}
                     onChange={e => setForgotEmail(e.target.value)}
+                    disabled={forgotLoading}
                     autoFocus
                   />
                 </div>
                 {forgotError && <p className="field-error">{forgotError}</p>}
                 <div className="modal-actions">
                   <button type="button" className="btn-secondary" onClick={() => setForgotOpen(false)}>Cancel</button>
-                  <button type="submit" className="btn-primary">Send OTP</button>
+                  <button type="submit" className="btn-primary" disabled={forgotLoading}>
+                    {forgotLoading ? 'Sending…' : 'Send OTP'}
+                  </button>
                 </div>
               </form>
             )}
 
             {forgotStep === 2 && (
               <form onSubmit={handleForgotVerifyOtp}>
-                <p className="modal-desc">OTP sent to <strong>{forgotTargetUser?.email}</strong>.</p>
-                {generatedOtp && <p className="demo-otp-hint">Demo OTP: <strong>{generatedOtp}</strong></p>}
+                <p className="modal-desc">OTP sent to your email address <strong>{forgotEmail}</strong>.</p>
                 <div className="form-group">
                   <input
                     className="input-field"
@@ -285,13 +303,16 @@ export default function Login() {
                     value={forgotOtp}
                     onChange={e => setForgotOtp(e.target.value)}
                     maxLength={6}
+                    disabled={forgotLoading}
                     autoFocus
                   />
                 </div>
                 {forgotError && <p className="field-error">{forgotError}</p>}
                 <div className="modal-actions">
                   <button type="button" className="btn-secondary" onClick={() => setForgotStep(1)}>Back</button>
-                  <button type="submit" className="btn-primary">Verify OTP</button>
+                  <button type="submit" className="btn-primary" disabled={forgotLoading}>
+                    {forgotLoading ? 'Verifying…' : 'Verify OTP'}
+                  </button>
                 </div>
               </form>
             )}
@@ -306,6 +327,7 @@ export default function Login() {
                     placeholder="New password (min 6 chars)"
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}
+                    disabled={forgotLoading}
                     autoFocus
                   />
                 </div>
@@ -316,12 +338,15 @@ export default function Login() {
                     placeholder="Confirm new password"
                     value={confirmPassword}
                     onChange={e => setConfirmPassword(e.target.value)}
+                    disabled={forgotLoading}
                   />
                 </div>
                 {forgotError && <p className="field-error">{forgotError}</p>}
                 <div className="modal-actions">
                   <button type="button" className="btn-secondary" onClick={() => setForgotOpen(false)}>Cancel</button>
-                  <button type="submit" className="btn-primary">Reset Password</button>
+                  <button type="submit" className="btn-primary" disabled={forgotLoading}>
+                    {forgotLoading ? 'Resetting…' : 'Reset Password'}
+                  </button>
                 </div>
               </form>
             )}

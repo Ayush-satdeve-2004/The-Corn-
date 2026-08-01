@@ -88,10 +88,10 @@ export const verifyMobileOTP = async (mobile, otp) => {
   });
 };
 
-export const resetPassword = async (userId, newPassword) => {
+export const resetPassword = async (userId, newPassword, email = '') => {
   return request('/auth/reset-password', {
     method: 'POST',
-    body: JSON.stringify({ userId, newPassword }),
+    body: JSON.stringify({ userId, newPassword, email }),
   });
 };
 

@@ -321,8 +321,13 @@ app.post('/api/auth/verify-otp', async (req, res) => {
 // Reset Password
 app.post('/api/auth/reset-password', async (req, res) => {
   try {
-    const { userId, newPassword } = req.body;
-    const user = await User.findById(userId);
+    const { userId, email, newPassword } = req.body;
+    let user = null;
+    if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+      user = await User.findById(userId);
+    } else if (email) {
+      user = await User.findOne({ email: email.trim().toLowerCase() });
+    }
 
     if (user) {
       user.password = Buffer.from(newPassword).toString('base64');
@@ -330,8 +335,9 @@ app.post('/api/auth/reset-password', async (req, res) => {
       return res.json({ success: true, message: 'Password reset successfully' });
     }
 
-    res.status(404).json({ success: false, message: 'User not found' });
+    res.status(404).json({ success: false, message: 'No registered user account found with that email address.' });
   } catch (err) {
+    console.error('Reset password error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
