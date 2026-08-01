@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getPendingAccounts, getActiveUsers, approveUser, rejectUser, getFeed, deleteUserByAdmin, deletePost } from '../services/api';
+import {
+  getPendingAccounts, getActiveUsers, approveUser, rejectUser, getFeed, deleteUserByAdmin, deletePost,
+  getAllFeedback, deleteFeedback
+} from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Toast from '../components/Toast';
 import { useNavigate } from 'react-router-dom';
@@ -10,14 +13,16 @@ import AdminAnalytics from '../components/AdminAnalytics';
 export default function AdminPanel() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('analytics'); // 'pending' | 'active' | 'posts' | 'analytics'
+  const [activeTab, setActiveTab] = useState('analytics'); // 'analytics' | 'pending' | 'active' | 'posts' | 'feedback'
   const [pendingUsers, setPendingUsers] = useState([]);
   const [activeUsers, setActiveUsers] = useState([]);
   const [allPosts, setAllPosts] = useState([]);
+  const [feedbacks, setFeedbacks] = useState([]);
   const [postFilter, setPostFilter] = useState('all'); // 'all' | 'photo' | 'video' | 'text'
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
   const [deletingPostId, setDeletingPostId] = useState(null);
+  const [deletingFeedbackId, setDeletingFeedbackId] = useState(null);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
 
   const showToast = (message, type = 'info') => {
@@ -28,14 +33,16 @@ export default function AdminPanel() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [pendingRes, activeRes, rawPosts] = await Promise.all([
+      const [pendingRes, activeRes, rawPosts, feedbackRes] = await Promise.all([
         getPendingAccounts(),
         getActiveUsers(),
-        getFeed()
+        getFeed(),
+        getAllFeedback()
       ]);
       setPendingUsers(pendingRes || []);
       setActiveUsers(activeRes || []);
       setAllPosts(rawPosts || []);
+      setFeedbacks(feedbackRes || []);
     } catch (err) {
       console.error(err);
       showToast('Error loading admin data', 'error');
@@ -109,6 +116,22 @@ export default function AdminPanel() {
     }
   };
 
+  const handleDeleteFeedback = async (feedbackId) => {
+    if (!window.confirm('Are you sure you want to delete this feedback?')) return;
+    setDeletingFeedbackId(feedbackId);
+    try {
+      const res = await deleteFeedback(feedbackId);
+      if (res && res.success) {
+        showToast('Feedback deleted successfully', 'success');
+        setFeedbacks(prev => prev.filter(f => (f._id || f.id) !== feedbackId));
+      }
+    } catch (err) {
+      showToast('Failed to delete feedback', 'error');
+    } finally {
+      setDeletingFeedbackId(null);
+    }
+  };
+
   const filteredPosts = allPosts.filter(p => {
     if (postFilter === 'all') return true;
     return p.type === postFilter;
@@ -131,18 +154,28 @@ export default function AdminPanel() {
         >
           Analytics & Graphs
         </button>
+
+        <button
+          className={`admin-tab ${activeTab === 'feedback' ? 'active' : ''}`}
+          onClick={() => setActiveTab('feedback')}
+        >
+          User Feedback ({feedbacks.length})
+        </button>
+
         <button
           className={`admin-tab ${activeTab === 'pending' ? 'active' : ''}`}
           onClick={() => setActiveTab('pending')}
         >
           Pending ({pendingUsers.length})
         </button>
+
         <button
           className={`admin-tab ${activeTab === 'active' ? 'active' : ''}`}
           onClick={() => setActiveTab('active')}
         >
           Active Users ({activeUsers.length})
         </button>
+
         <button
           className={`admin-tab ${activeTab === 'posts' ? 'active' : ''}`}
           onClick={() => setActiveTab('posts')}
@@ -156,6 +189,55 @@ export default function AdminPanel() {
           <div className="loading-container"><div className="spinner" /></div>
         ) : activeTab === 'analytics' ? (
           <AdminAnalytics posts={allPosts} users={activeUsers} />
+        ) : activeTab === 'feedback' ? (
+          /* User Feedback Section */
+          feedbacks.length === 0 ? (
+            <div className="admin-empty">
+              <h3>No user feedback received</h3>
+              <p>Feedback submitted by regular users will appear here for admin review.</p>
+            </div>
+          ) : (
+            <div className="pending-list">
+              {feedbacks.map(f => {
+                const fId = f._id || f.id;
+                return (
+                  <div key={fId} className="admin-user-card" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                      <div>
+                        <h4 className="admin-user-name" style={{ margin: 0 }}>{f.userName || 'App User'}</h4>
+                        <p className="admin-user-detail" style={{ margin: '2px 0 0' }}>{f.userEmail}</p>
+                      </div>
+                      <span className="post-type-tag" style={{ background: '#8B5324', color: '#fff' }}>
+                        {f.category || 'General Feedback'}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontWeight: 'bold', color: '#8B5324' }}>Rating: {f.rating || 5}/5 ★</span>
+                      <span style={{ color: 'var(--sage-dark)', fontSize: '0.8rem' }}>
+                        · {new Date(f.timestamp).toLocaleString()}
+                      </span>
+                    </div>
+
+                    <p style={{ background: 'var(--cream-light)', padding: '12px', borderRadius: '8px', width: '100%', margin: 0, color: 'var(--chocolate)', lineHeight: '1.4' }}>
+                      "{f.message}"
+                    </p>
+
+                    <div style={{ alignSelf: 'flex-end', marginTop: '4px' }}>
+                      <button
+                        className="btn-reject"
+                        onClick={() => handleDeleteFeedback(fId)}
+                        disabled={deletingFeedbackId === fId}
+                        style={{ backgroundColor: '#c0392b', color: '#fff' }}
+                      >
+                        {deletingFeedbackId === fId ? 'Deleting...' : 'Delete Feedback'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
         ) : activeTab === 'pending' ? (
           /* Pending Users List */
           pendingUsers.length === 0 ? (

@@ -346,3 +346,7 @@ export const getAllFeedback = async () => {
     return [];
   }
 };
+
+export const deleteFeedback = async (feedbackId) => {
+  return request(`/admin/feedback/${feedbackId}`, { method: 'DELETE' });
+};

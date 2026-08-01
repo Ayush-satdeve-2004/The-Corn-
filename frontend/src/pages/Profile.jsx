@@ -371,12 +371,14 @@ export default function Profile() {
       <div className="settings-section">
         <h3 className="settings-heading">ACCOUNT</h3>
         <div className="settings-list">
-          <button className="settings-row" onClick={() => setFeedbackOpen(true)}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-            Give App Feedback
-          </button>
+          {!isAdmin && (
+            <button className="settings-row" onClick={() => setFeedbackOpen(true)}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              Give App Feedback
+            </button>
+          )}
           <button className="settings-row" onClick={() => { setResetStep(1); setResetOpen(true); }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
               <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />

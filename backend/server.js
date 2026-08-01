@@ -752,12 +752,19 @@ app.delete('/api/posts/:id', async (req, res) => {
   }
 });
 
-// Submit App Feedback
+// Submit App Feedback (Only regular users allowed, Admins excluded)
 app.post('/api/feedback', async (req, res) => {
   try {
     const { userId, userEmail, userName, category, rating, message } = req.body;
     if (!message || !message.trim()) {
       return res.status(400).json({ success: false, message: 'Feedback message is required' });
+    }
+
+    if (userId) {
+      const submittingUser = await User.findById(userId);
+      if (submittingUser && (submittingUser.role === 'ADMIN' || submittingUser.username === 'ayush')) {
+        return res.status(403).json({ success: false, message: 'Admins cannot submit feedback. Feedback is reserved for regular users.' });
+      }
     }
 
     const newFeedback = await Feedback.create({
@@ -776,13 +783,24 @@ app.post('/api/feedback', async (req, res) => {
   }
 });
 
-// Admin: Get all Feedback
+// Admin: Get all Feedback (Only for Admin control panel)
 app.get('/api/admin/feedback', async (req, res) => {
   try {
     const feedbacks = await Feedback.find().sort({ timestamp: -1 });
     res.json(feedbacks);
   } catch (err) {
     res.json([]);
+  }
+});
+
+// Admin: Delete Feedback after reading
+app.delete('/api/admin/feedback/:id', async (req, res) => {
+  try {
+    await Feedback.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Feedback deleted successfully' });
+  } catch (err) {
+    console.error('Delete feedback error:', err);
+    res.status(500).json({ success: false, message: 'Failed to delete feedback' });
   }
 });
 
