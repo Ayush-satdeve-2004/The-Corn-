@@ -139,11 +139,29 @@ export default function Register() {
     return () => clearInterval(interval);
   }, [timer]);
 
+  // Automatically send Brevo OTP email when step becomes 2
+  useEffect(() => {
+    if (step === 2 && formData.email) {
+      setLoading(true);
+      sendEmailOTP(formData.email)
+        .then(res => {
+          showToast(res?.message || 'OTP code sent to your email inbox.', 'info');
+          setTimer(60);
+        })
+        .catch(() => {
+          showToast('Error sending OTP email');
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  }, [step]);
+
   const handleSendEmailOTP = async () => {
     setLoading(true);
     try {
       const res = await sendEmailOTP(formData.email);
-      showToast(res.message || 'OTP sent to your email inbox');
+      showToast(res.message || 'OTP code sent to your email inbox.', 'info');
       setTimer(60);
     } catch (e) {
       showToast('Error sending OTP email');
@@ -311,48 +329,52 @@ export default function Register() {
             {step === 2 && (
               <div className="step-container">
                 <div className="verify-info">
-                  <p>We need to verify your email address.</p>
-                  <strong>{formData.email}</strong>
+                  <h3 style={{ margin: '0 0 4px 0', color: '#000000' }}>Verify Email</h3>
+                  <p style={{ margin: 0, color: '#36190D', fontSize: '0.9rem' }}>
+                    Enter the 6-digit OTP code sent to <strong>{formData.email}</strong>.
+                  </p>
                 </div>
 
-                {!timer && emailOTP.join('').length === 0 ? (
-                  <button onClick={handleSendEmailOTP} className="btn-primary" disabled={loading}>
-                    Send OTP to Email
-                  </button>
-                ) : (
-                  <>
-                    <div className="otp-container">
-                      {emailOTP.map((digit, idx) => (
-                        <input
-                          key={`email-${idx}`}
-                          ref={el => emailInputRefs.current[idx] = el}
-                          type="text"
-                          maxLength={1}
-                          className={`otp-input ${errors.emailOtp ? 'error' : ''}`}
-                          value={digit}
-                          onChange={e => handleOtpChange(idx, e.target.value)}
-                          onKeyDown={e => handleOtpKeyDown(idx, e)}
-                        />
-                      ))}
-                    </div>
-                    {errors.emailOtp && <p className="error-text" style={{textAlign: 'center'}}>{errors.emailOtp}</p>}
-                    
-                    <button onClick={handleVerifyEmail} className="btn-primary" disabled={loading || emailOTP.join('').length !== 6}>
-                      Verify Email
-                    </button>
+                <div className="otp-container">
+                  {emailOTP.map((digit, idx) => (
+                    <input
+                      key={`email-${idx}`}
+                      ref={el => emailInputRefs.current[idx] = el}
+                      type="text"
+                      maxLength={1}
+                      className={`otp-box ${errors.emailOtp ? 'error' : ''}`}
+                      value={digit}
+                      onChange={e => handleOtpChange(idx, e.target.value)}
+                      onKeyDown={e => handleOtpKeyDown(idx, e)}
+                    />
+                  ))}
+                </div>
+                {errors.emailOtp && <p className="error-text" style={{ textAlign: 'center', margin: '4px 0' }}>{errors.emailOtp}</p>}
 
-                    <div className="resend-text">
-                      {timer > 0 ? (
-                        <span>Resend OTP in {timer}s</span>
-                      ) : (
-                        <button onClick={handleSendEmailOTP} className="resend-link">Resend OTP</button>
-                      )}
-                    </div>
-                  </>
-                )}
+                <div className="resend-text" style={{ textAlign: 'center', margin: '0.8rem 0' }}>
+                  {timer > 0 ? (
+                    <span style={{ color: '#8B5324', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                      Resend OTP available in {timer}s
+                    </span>
+                  ) : (
+                    <button type="button" onClick={handleSendEmailOTP} className="resend-link" disabled={loading}>
+                      {loading ? 'Sending...' : 'Resend OTP'}
+                    </button>
+                  )}
+                </div>
 
                 <div className="button-group">
-                  <button onClick={() => setStep(1)} className="btn-secondary">Back</button>
+                  <button type="button" onClick={() => setStep(1)} className="btn-secondary">
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleVerifyEmail}
+                    className="btn-primary"
+                    disabled={loading || emailOTP.join('').length !== 6}
+                  >
+                    {loading ? 'Verifying...' : 'Verify OTP'}
+                  </button>
                 </div>
               </div>
             )}

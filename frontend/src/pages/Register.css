@@ -242,29 +242,38 @@
 
 /* OTP Styles */
 .otp-container {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin: 1rem 0;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 1.5rem 0 !important;
 }
 
+.otp-box,
 .otp-input {
-  width: 45px;
-  height: 55px;
-  text-align: center;
-  font-size: 1.5rem;
-  font-weight: 700;
-  border: 1.5px solid rgba(156, 168, 134, 0.3);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.8);
-  color: var(--chocolate-dark, #2A1208);
-  transition: all 0.2s ease;
+  width: 44px !important;
+  height: 52px !important;
+  max-width: 13vw !important;
+  flex: 1 1 auto !important;
+  text-align: center !important;
+  font-size: 1.3rem !important;
+  font-weight: 700 !important;
+  border: 2px solid #8B5324 !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+  box-sizing: border-box !important;
+  transition: all 0.2s ease !important;
 }
 
+.otp-box:focus,
 .otp-input:focus {
-  outline: none;
-  border-color: var(--sage-dark, #8FA075);
-  box-shadow: 0 0 0 3px rgba(156, 168, 134, 0.2);
+  outline: none !important;
+  border-color: #27ae60 !important;
+  box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.2) !important;
 }
 
 .verify-info {

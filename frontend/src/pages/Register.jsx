@@ -140,11 +140,29 @@ export default function Register() {
     return () => clearInterval(interval);
   }, [timer]);
 
+  // Automatically send Brevo OTP email when step becomes 2
+  useEffect(() => {
+    if (step === 2 && formData.email) {
+      setLoading(true);
+      sendEmailOTP(formData.email)
+        .then(res => {
+          showToast(res?.message || 'OTP code sent to your email inbox.', 'info');
+          setTimer(60);
+        })
+        .catch(() => {
+          showToast('Error sending OTP email', 'error');
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  }, [step]);
+
   const handleSendEmailOTP = async () => {
     setLoading(true);
     try {
       const res = await sendEmailOTP(formData.email);
-      showToast(res.message || 'OTP sent to your email inbox', 'info');
+      showToast(res.message || 'OTP code sent to your email inbox.', 'info');
       setTimer(60);
     } catch (e) {
       showToast('Error sending OTP email', 'error');
@@ -307,46 +325,54 @@ export default function Register() {
               </form>
             )}
 
-            {/* Step 2: Email Verification */}
+            {/* Step 2: Email Verification (Brevo OTP) */}
             {step === 2 && (
               <div className="step-container">
-                <h2>Verify Email</h2>
-                <p className="step-desc">
-                  Enter the 6-digit OTP code sent to <strong>{formData.email}</strong>.
-                </p>
+                <div className="verify-info">
+                  <h3 style={{ margin: '0 0 4px 0', color: '#000000' }}>Verify Email</h3>
+                  <p style={{ margin: 0, color: '#36190D', fontSize: '0.9rem' }}>
+                    Enter the 6-digit OTP code sent to <strong>{formData.email}</strong>.
+                  </p>
+                </div>
 
                 <div className="otp-container">
                   {emailOTP.map((digit, idx) => (
                     <input
-                      key={idx}
+                      key={`email-${idx}`}
                       ref={el => emailInputRefs.current[idx] = el}
                       type="text"
                       maxLength={1}
-                      className="otp-box"
+                      className={`otp-box ${errors.emailOtp ? 'error' : ''}`}
                       value={digit}
                       onChange={e => handleOtpChange(idx, e.target.value)}
                       onKeyDown={e => handleOtpKeyDown(idx, e)}
                     />
                   ))}
                 </div>
+                {errors.emailOtp && <p className="error-text" style={{ textAlign: 'center', margin: '4px 0' }}>{errors.emailOtp}</p>}
 
-                {errors.emailOtp && <span className="error-text center">{errors.emailOtp}</span>}
-
-                <div className="otp-actions">
+                <div className="resend-text" style={{ textAlign: 'center', margin: '0.8rem 0' }}>
                   {timer > 0 ? (
-                    <span className="timer-text">Resend OTP in {timer}s</span>
+                    <span style={{ color: '#8B5324', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                      Resend OTP available in {timer}s
+                    </span>
                   ) : (
-                    <button type="button" className="btn-link" onClick={handleSendEmailOTP} disabled={loading}>
-                      Send / Resend OTP
+                    <button type="button" onClick={handleSendEmailOTP} className="resend-link" disabled={loading}>
+                      {loading ? 'Sending...' : 'Resend OTP'}
                     </button>
                   )}
                 </div>
 
                 <div className="button-group">
-                  <button type="button" className="btn-secondary" onClick={() => setStep(1)}>
+                  <button type="button" onClick={() => setStep(1)} className="btn-secondary">
                     Back
                   </button>
-                  <button type="button" className="btn-primary" onClick={handleVerifyEmail} disabled={loading}>
+                  <button
+                    type="button"
+                    onClick={handleVerifyEmail}
+                    className="btn-primary"
+                    disabled={loading || emailOTP.join('').length !== 6}
+                  >
                     {loading ? 'Verifying...' : 'Verify OTP'}
                   </button>
                 </div>
